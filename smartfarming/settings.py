@@ -12,6 +12,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='', cast=Csv())
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -25,9 +26,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
+    'channels',
 
     # Local apps
     'smartfarming',
+    'iot'
 ]
 
 MIDDLEWARE = [
@@ -138,3 +141,19 @@ CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_NAME = 'scit_smart_farming'
+
+# Keperluan MQTT
+MQTT_BROKER_HOST = "localhost"
+MQTT_BROKER_PORT = 1883
+MQTT_KEEPALIVE = 60
+
+# Keperluan WebSocket
+ASGI_APPLICATION = 'smartfarming.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('localhost', 6380)], # sesuaikan dengan port redis
+        },
+    },
+}
