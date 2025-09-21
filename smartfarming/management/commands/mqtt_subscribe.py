@@ -28,8 +28,8 @@ class Command(BaseCommand):
         """Callback yang dipanggil saat berhasil terhubung ke broker."""
         if rc == 0:
             self.stdout.write(self.style.SUCCESS("Successfully connected to MQTT broker."))
-            client.subscribe("devices/+/control")
-            self.stdout.write(self.style.SUCCESS("Subscribed to topic: devices/+/control"))
+            client.subscribe("devices/+/status")
+            self.stdout.write(self.style.SUCCESS("Subscribed to topic: devices/+/status"))
         else:
             self.stdout.write(self.style.ERROR(f"Failed to connect, return code {rc}\n"))
 

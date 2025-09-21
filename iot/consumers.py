@@ -24,13 +24,20 @@ class DeviceConsumer(AsyncWebsocketConsumer):
 
     # Menerima pesan dari WebSocket (dari Frontend)
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        command = data['command']
+        try:
+            data_dict = json.loads(text_data)
+            print(f"WS> Received from client: {data_dict}")
 
-        # Publish pesan ke MQTT untuk dikirim ke ESP32
-        topic = f"devices/{self.device_id}/control"
-        payload = json.dumps({"command": command})
-        publish_message(topic, payload)
+            command = data_dict.get('command', 'OFF').upper()
+            duration = data_dict.get('duration', 0)
+            payload_for_mqtt = f"{command}:{duration}"
+            topic = f"devices/{self.device_id}/control"
+            publish_message(topic, payload_for_mqtt)
+
+            print(f"WS> Forwarded to MQTT topic '{topic}': {payload_for_mqtt}")
+
+        except Exception as e:
+            print(f"WS> An error occurred: {e}")
 
     # Menerima pesan dari channel layer (dari subscriber MQTT)
     async def device_message(self, event):
