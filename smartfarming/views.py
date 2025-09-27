@@ -8,6 +8,7 @@ from django.utils.crypto import get_random_string
 from django.contrib.auth.models import User
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q
+from smartfarming.utils.exc_handler import CustomResponse
 from .serializers import *
 
 class RegistrationView(APIView):
@@ -16,8 +17,8 @@ class RegistrationView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(message = "User registered successfully!", status=status.HTTP_201_CREATED)
+        return CustomResponse(success=False,errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(APIView):
@@ -27,12 +28,12 @@ class LoginView(APIView):
         password = request.data.get('password')
 
         if not identifier or not password:
-            return Response({'error': 'Identifier dan password wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, errors = 'Identifier dan password wajib diisi.', status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(Q(username=identifier) | Q(email=identifier))
         except User.DoesNotExist:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            return CustomResponse(success=False, errors = 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
 
         user_authenticated = authenticate(username=user.username, password=password)
 
@@ -40,12 +41,12 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user_authenticated)
             user_serializer = UserSerializer(user_authenticated)
 
-            return Response({
+            return CustomResponse(data={
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'user': user_serializer.data
             })
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        return CustomResponse(errors= 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]  # Hanya user yang terautentikasi yang bisa logout
@@ -54,16 +55,16 @@ class LogoutView(APIView):
         refresh_token = request.data.get("refresh")
 
         if not refresh_token:
-            return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, errors = "Refresh token is required", status=status.HTTP_400_BAD_REQUEST)
 
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()  # Memasukkan token ke blacklist
-            return Response({"message": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT)
+            return CustomResponse(message= "Logout successful", status=status.HTTP_205_RESET_CONTENT)
         except TokenError:  # Menangani token yang tidak valid atau sudah kadaluarsa
-            return Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, errors = "Invalid or expired refresh token", status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return CustomResponse(success=False, errors = str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ResetPasswordView(APIView):
 
@@ -85,8 +86,8 @@ class ResetPasswordView(APIView):
                 [email],
                 fail_silently=False,
             )
-            return Response({'message': 'Silakan cek email untuk reset password'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(message='Silakan cek email untuk reset password', status=status.HTTP_200_OK)
+        return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AuthView(APIView):
     def get(self, request):
@@ -98,5 +99,5 @@ class AuthView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name
             }
-            return Response(context, status=status.HTTP_200_OK)
-        return Response({'detail': 'Not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+            return CustomResponse(data = context, status=status.HTTP_200_OK)
+        return CustomResponse(success=False, errors = 'Not authenticated', status=status.HTTP_401_UNAUTHORIZED)

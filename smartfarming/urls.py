@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authentication import SessionAuthentication
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from utils.permissions import IsSwaggerAllowed
+from smartfarming.utils.permissions import IsSwaggerAllowed
 
 schema_view = get_schema_view(
     openapi.Info(
