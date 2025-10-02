@@ -5,6 +5,7 @@ Automat==25.4.16
 cffi==2.0.0
 channels==4.3.1
 channels_redis==4.3.0
+colorama==0.4.6
 constantly==23.10.4
 cryptography==46.0.1
 daphne==4.2.1
@@ -30,6 +31,7 @@ pyOpenSSL==25.3.0
 python-decouple==3.8
 pytz==2025.2
 PyYAML==6.0.2
+qrcode==8.2
 redis==6.4.0
 service-identity==24.2.0
 setuptools==80.9.0
@@ -39,4 +41,6 @@ txaio==25.6.1
 typing_extensions==4.15.0
 tzdata==2025.2
 uritemplate==4.2.0
+uuid6==2025.0.1
+websockets==15.0.1
 zope.interface==8.0
