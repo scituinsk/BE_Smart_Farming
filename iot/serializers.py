@@ -21,14 +21,14 @@ class ModulSerializers(serializers.ModelSerializer):
         fields = ['id','type','user', 'serial_id', 'name', 'descriptions', 'feature','password', 'created_at']
         read_only_fields = ['serial_id', 'feature']
 
-class DataModulSerializers(serializers.ModelSerializer):
-    modul = serializers.SlugRelatedField(read_only=True,slug_field='name')
-    feature = serializers.SlugRelatedField(read_only=True,slug_field='name')
+# class DataModulSerializers(serializers.ModelSerializer):
+#     modul = serializers.SlugRelatedField(read_only=True,slug_field='name')
+#     feature = serializers.SlugRelatedField(read_only=True,slug_field='name')
     
-    class Meta:
-        model = DataModul
-        fields = ['modul', 'feature', 'data', 'last_data']
-        read_only_fields = ['data', 'last_data']
+#     class Meta:
+#         model = DataModul
+#         fields = ['modul', 'feature', 'data', 'last_data']
+#         read_only_fields = ['data', 'last_data']
 
 class contoh(serializers.ModelSerializer):
     

@@ -40,12 +40,15 @@ class LoginView(APIView):
         if user_authenticated is not None:
             refresh = RefreshToken.for_user(user_authenticated)
             user_serializer = UserSerializer(user_authenticated)
+            role = 'admin' if user_authenticated.is_staff else 'user'
+            user_data = user_serializer.data
+            user_data['role'] = role
 
             return CustomResponse(data={
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'user': user_serializer.data
-            })
+                'user': user_data
+            }, message="Login berhasil!", status=status.HTTP_202_ACCEPTED)
         return CustomResponse(errors= 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):

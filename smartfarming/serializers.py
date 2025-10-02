@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 class RegistrationSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=30)
@@ -60,12 +60,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Nama depan maksimal 30 karakter.")
         return value
 
-    def validate_last_name(self, value):
-        if len(value) < 3:
-            raise serializers.ValidationError("Nama belakang minimal 3 karakter.")
-        if len(value) > 30:
-            raise serializers.ValidationError("Nama belakang maksimal 30 karakter.")
-        return value
+    # def validate_last_name(self, value):
+    #     if len(value) < 3:
+    #         raise serializers.ValidationError("Nama belakang minimal 3 karakter.")
+    #     if len(value) > 30:
+    #         raise serializers.ValidationError("Nama belakang maksimal 30 karakter.")
+    #     return value
 
     def validate(self, data):
         if data['password1'] != data['password2']:
@@ -80,6 +80,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password1'],
             first_name=validated_data['first_name'],
-            last_name=validated_data['last_name']
+            # last_name=validated_data['last_name']
         )
         return user

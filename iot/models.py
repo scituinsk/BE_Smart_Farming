@@ -24,12 +24,12 @@ class Modul(models.Model):
     def __str__(self):
         return f"{self.name} - {self.serial_id}"
 
-class DataModul(models.Model):
-    """ Model untuk menyimpan data terakhir dari modul menurut featurenya """
-    modul = models.ForeignKey(Modul, name='data_modul', on_delete=models.CASCADE)
-    feature = models.ForeignKey('Feature', name='data_feature_modul', on_delete=models.CASCADE)
-    data = models.CharField(max_length=255, blank=True, null=True)
-    last_data = models.DateTimeField(auto_now=True)
+# class DataModul(models.Model):
+#     """ Model untuk menyimpan data terakhir dari modul menurut featurenya """
+#     modul = models.ForeignKey(Modul, name='data_modul', on_delete=models.CASCADE)
+#     feature = models.ForeignKey('Feature', name='data_feature_modul', on_delete=models.CASCADE)
+#     data = models.CharField(max_length=255, blank=True, null=True)
+#     last_data = models.DateTimeField(auto_now=True)
 
 class Feature(models.Model):
     """ Model feature yang hanya dapat dimodifikasi oleh admin """

@@ -1,0 +1,27 @@
+name: Deploy Backend Django Rest Framework via SSH and Docker Compose
+
+# Pemicu workflow -> dijalankan saat ada push ke branch main atau bisa dijalankan manual
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # perintah untuk pull, rebuild dan migrasi
+      - name: Connect to server, pull code, and rebuild docker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CI_CD_SERVER_2 }}
+          username: ${{ secrets.CI_CD_USER }}
+          key: ${{ secrets.CI_CD_PASSWORD }}
+          script: |
+            cd /opt/production/smartfarming/BE_Smart_Farming
+            git pull origin main
+            sudo docker-compose build django_smartfarming
+            sudo docker-compose run --rm django_smartfarming python manage.py makemigrations
+            sudo docker-compose run --rm django_smartfarming python manage.py migrate
+            sudo docker-compose up -d
