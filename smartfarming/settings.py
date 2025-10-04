@@ -30,7 +30,8 @@ INSTALLED_APPS = [
 
     # Local apps
     'smartfarming',
-    'iot'
+    'iot',
+    'schedule',
 ]
 
 MIDDLEWARE = [

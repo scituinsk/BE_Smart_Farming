@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/reset-password', ResetPasswordView.as_view(), name='reset_password'),
 
     path('api/iot/', include('iot.urls')),
+    path('api/schedule/', include('schedule.urls')),
 
     # Dokumentasi Swagger & Redoc
     path('api/doc/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
