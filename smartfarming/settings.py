@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'smartfarming',
+    'profil',
     'iot',
     'schedule',
 ]
