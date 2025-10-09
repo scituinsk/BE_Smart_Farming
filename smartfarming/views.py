@@ -33,7 +33,7 @@ class LoginView(APIView):
         try:
             user = User.objects.get(Q(username=identifier) | Q(email=identifier))
         except User.DoesNotExist:
-            return CustomResponse(success=False, errors = 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
+            return CustomResponse(message='User tidak terdaftar',success=False, errors = 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
 
         user_authenticated = authenticate(username=user.username, password=password)
 
@@ -49,7 +49,7 @@ class LoginView(APIView):
                 'access': str(refresh.access_token),
                 'user': user_data
             }, message="Login berhasil!", status=status.HTTP_202_ACCEPTED)
-        return CustomResponse(errors= 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
+        return CustomResponse(message='Invalid credentials' ,errors= 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]  # Hanya user yang terautentikasi yang bisa logout

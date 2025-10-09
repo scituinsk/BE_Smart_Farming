@@ -7,9 +7,11 @@ from django.dispatch import receiver
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, null=True, blank=True)
     image = models.FileField(upload_to='profiles/', null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.user.username}"
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """ 
@@ -29,6 +31,6 @@ def delete_old_profile_image_on_update(sender, instance, **kwargs):
         old_instance = UserProfile.objects.get(pk=instance.pk)
     except UserProfile.DoesNotExist:
         return
-    old_image = old_instance.profile_image
-    if old_image and old_image != instance.profile_image and old_image.storage.exists(old_image.name):
+    old_image = old_instance.image
+    if old_image and old_image != instance.image and old_image.storage.exists(old_image.name):
         old_image.delete(save=False)
