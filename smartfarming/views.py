@@ -48,7 +48,7 @@ class LoginView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'user': user_data
-            }, message="Login berhasil!", status=status.HTTP_202_ACCEPTED)
+            }, message="Login berhasil!", status=status.HTTP_200_OK)
         return CustomResponse(message='Username atau password salah' ,errors= 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):

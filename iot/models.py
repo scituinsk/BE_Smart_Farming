@@ -7,6 +7,7 @@ from uuid6 import uuid7
 class Modul(models.Model):
     """ Model untuk menyimpan data microcontroller dan generate uuid baru jika uuid bocor """
     serial_id = models.UUIDField(default=uuid7) # menggunakann uuid7 untuk fleksibilitas kedepanya
+    auth_id = models.UUIDField(default=uuid7) 
     type  = models.CharField(max_length=50)
     user = models.ManyToManyField(User, blank=True)
     password = models.CharField(max_length=10, default="paktani")
