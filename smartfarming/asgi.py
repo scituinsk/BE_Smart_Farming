@@ -1,17 +1,18 @@
 import os
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from iot import routing
-from iot.middleware import JwtAuthMiddleware
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartfarming.settings')
+django_asgi_app = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from iot.middleware import JwtAuthMiddleware
+import iot.routing
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
+    "http": django_asgi_app,
     "websocket": JwtAuthMiddleware(
         URLRouter(
-            routing.websocket_urlpatterns
+            iot.routing.websocket_urlpatterns
         )
     ),
 })
