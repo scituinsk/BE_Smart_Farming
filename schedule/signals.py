@@ -2,6 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo 
 
 from .models import Alarm
 from .tasks import trigger_alarm_task
@@ -23,7 +24,7 @@ def get_next_run_datetime(alarm):
     Menghitung datetime absolut berikutnya kapan alarm harus berbunyi,
     berdasarkan waktu saat ini, waktu alarm, dan hari pengulangan.
     """
-    now = timezone.now()
+    now = datetime.now(ZoneInfo("Asia/Jakarta"))
     alarm_time = alarm.time
     
     # Gabungkan tanggal hari ini dengan waktu alarm
@@ -71,11 +72,12 @@ def schedule_or_update_alarm(sender, instance, **kwargs):
         print(f"SIGNAL: Tugas lama {instance.celery_task_id} untuk Alarm {instance.id} dibatalkan.")
 
     # Jika alarm aktif, jadwalkan tugas baru
+    now = datetime.now(ZoneInfo("Asia/Jakarta"))
     if instance.is_active:
         next_run = get_next_run_datetime(instance)
         print("="*40)
         print(f"SIGNAL DEBUG: Menjadwalkan Alarm ID: {instance.id}")
-        print(f"SIGNAL DEBUG: Waktu saat ini (timezone aware): {timezone.now()}")
+        print(f"SIGNAL DEBUG: Waktu saat ini (timezone aware): {now}")
         print(f"SIGNAL DEBUG: Waktu alarm dari DB: {instance.time}")
         print(f"SIGNAL DEBUG: Waktu eksekusi berikutnya dihitung: {next_run}")
         print("="*40)
