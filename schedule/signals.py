@@ -73,6 +73,12 @@ def schedule_or_update_alarm(sender, instance, **kwargs):
     # Jika alarm aktif, jadwalkan tugas baru
     if instance.is_active:
         next_run = get_next_run_datetime(instance)
+        print("="*40)
+        print(f"SIGNAL DEBUG: Menjadwalkan Alarm ID: {instance.id}")
+        print(f"SIGNAL DEBUG: Waktu saat ini (timezone aware): {timezone.now()}")
+        print(f"SIGNAL DEBUG: Waktu alarm dari DB: {instance.time}")
+        print(f"SIGNAL DEBUG: Waktu eksekusi berikutnya dihitung: {next_run}")
+        print("="*40)
         
         if next_run:
             # Jadwalkan tugas baru untuk dijalankan pada waktu yang dihitung
