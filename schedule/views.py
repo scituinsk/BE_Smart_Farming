@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from smartfarming.utils.exc_handler import CustomResponse
 from iot.models import Modul
-from .models import Alarm
-from .serializers import AlarmSerializer
+from .models import *
+from .serializers import *
 
 class AlarmListCreateAPIView(APIView):
     """
@@ -79,3 +79,31 @@ class AlarmDetailAPIView(APIView):
         alarm = self.get_object(pk, request.user)
         alarm.delete()
         return CustomResponse(message="Alaram berhasil dihapus.",status=status.HTTP_200_OK)
+    
+class LogsListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, serial_id):
+        """Mengambil detail log modul."""
+        modul = get_object_or_404(Modul, serial_id=serial_id)
+        is_member = modul.user.filter(pk=request.user.pk).exists()
+
+        if not is_member:
+            return CustomResponse(message="Anda tidak memiliki izin untuk melihat log modul ini.", status=status.HTTP_403_FORBIDDEN)
+        logs = ScheduleLog.objects.filter(modul = modul)
+        serializer = ScheduleLogSerializer(logs, many=True)
+        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK)
+    
+class LogsDeleteAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, id):
+        """
+        Menghapus satu entitas log berdasarkan ID-nya.
+        """
+        log_object = get_object_or_404(ScheduleLog, id=id)
+        is_member = log_object.modul.user.filter(pk=request.user.pk).exists()
+
+        if not is_member:
+            return CustomResponse(message="Anda tidak memiliki izin untuk menghapus log ini.", status=status.HTTP_403_FORBIDDEN)
+        log_object.delete()
+        return CustomResponse(message="Log berhasil dihapus.", status=status.HTTP_200_OK)

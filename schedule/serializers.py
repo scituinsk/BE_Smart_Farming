@@ -11,3 +11,9 @@ class AlarmSerializer(serializers.ModelSerializer):
             'repeat_thursday', 'repeat_friday', 'repeat_saturday', 'repeat_sunday',
             'created_at', 'updated_at'
         ]
+
+class ScheduleLogSerializer(serializers.ModelSerializer):
+    modul = serializers.SlugRelatedField(read_only=True,slug_field='name')
+    class Meta:
+        model = ScheduleLog
+        fields = ['id','modul', 'message', 'created_at']
