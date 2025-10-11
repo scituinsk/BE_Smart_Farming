@@ -61,3 +61,6 @@ nosetests.xml
 test-results.xml
 
 sdk/
+
+# Celery
+celerybeat-schedule.*

@@ -166,8 +166,9 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         message = event['message']
         sender_channel_name = event['sender_channel_name']
 
-        # Jangan kirim pesan kembali ke pengirimnya
-        if self.channel_name != sender_channel_name:
+        # Jika pengirimnya adalah celery_worker, kirim ke semua.
+        # Jika pengirimnya adalah client lain, jangan kirim kembali ke pengirim.
+        if sender_channel_name == 'celery_worker' or self.channel_name != sender_channel_name:
             await self.send(text_data=message)
 
     async def add_to_group(self):
