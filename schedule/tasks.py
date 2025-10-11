@@ -1,29 +1,38 @@
+import json
 from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import json
+from smartfarming.utils.schedule import schedule_alarm_task
+from .models import Alarm
 
 @shared_task(name="trigger_alarm_task")
-def trigger_alarm_task(serial_id, alarm_id, alarm_label, alarm_time_str):
+def trigger_alarm_task(alarm_id):
     """
     Tugas Celery yang dijalankan saat alarm berbunyi.
-    Tugas ini mengirimkan pesan ke grup WebSocket yang sesuai.
+    Tugas ini akan:
+    1. Mengirim pesan ke WebSocket.
+    2. Menjadwalkan ulang dirinya sendiri jika alarmnya berulang.
     """
+    try:
+        alarm = Alarm.objects.get(pk=alarm_id)
+    except Alarm.DoesNotExist:
+        print(f"ALARM TASK: Alarm dengan ID {alarm_id} tidak ditemukan. Berhenti.")
+        return
+
+    # --- Kirim Pesan ke WebSocket ---
     channel_layer = get_channel_layer()
-    group_name = f'grup_{serial_id}'
-    
-    # Pesan yang akan dikirim ke perangkat/dashboard
+    group_name = f'grup_{alarm.modul.serial_id}'
+
+    # ubah pesan sesuai kebutuhan
     message_payload = {
         'type': 'alarm_triggered',
-        'alarm_id': alarm_id,
-        'label': alarm_label,
-        'time': alarm_time_str,
-        'message': f"ALARM AKTIF: {alarm_label or 'Alarm'} pada {alarm_time_str}"
+        'alarm_id': alarm.id,
+        'label': alarm.label,
+        'time': alarm.time.strftime('%H:%M:%S'),
+        'message': f"ALARM AKTIF: {alarm.label or 'Alarm'} pada {alarm.time.strftime('%H:%M:%S')}"
     }
-
-    print(f"CELERY WORKER: Memicu alarm untuk grup '{group_name}'")
+    print(f"ALARM TASK: Memicu alarm untuk grup '{group_name}'")
     
-    # Mengirim pesan ke channel layer (WebSocket group)
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
@@ -32,3 +41,14 @@ def trigger_alarm_task(serial_id, alarm_id, alarm_label, alarm_time_str):
             'sender_channel_name': 'celery_worker'
         }
     )
+
+    # --- Jadwalkan Ulang ---
+    # Jika alarmnya masih aktif dan merupakan alarm berulang
+    if alarm.is_active and alarm.is_repeating:
+        print(f"ALARM TASK: Menjadwalkan ulang untuk alarm berulang ID {alarm_id}...")
+        schedule_alarm_task(alarm)
+    else:
+        # Jika tidak berulang, hapus ID tugas agar tidak ada sisa
+        alarm.celery_task_id = None
+        alarm.save()
+        print(f"ALARM TASK: Alarm sekali jalan ID {alarm_id} selesai.")
