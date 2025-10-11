@@ -2,7 +2,6 @@ import json
 from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from smartfarming.utils.schedule import schedule_alarm_task
 from .models import Alarm
 
 @shared_task(name="trigger_alarm_task")
@@ -45,6 +44,7 @@ def trigger_alarm_task(alarm_id):
     # --- Jadwalkan Ulang ---
     # Jika alarmnya masih aktif dan merupakan alarm berulang
     if alarm.is_active and alarm.is_repeating:
+        from smartfarming.utils.schedule import schedule_alarm_task
         print(f"ALARM TASK: Menjadwalkan ulang untuk alarm berulang ID {alarm_id}...")
         schedule_alarm_task(alarm)
     else:
