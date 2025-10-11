@@ -2,6 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from iot.models import Modul
+from schedule.models import ScheduleLog
 
 class DeviceConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -78,7 +79,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         self.serial_id = self.scope['url_route']['kwargs']['serial_id']
         self.group_name = f'grup_{self.serial_id}'
         self.user = self.scope['user']
-        print(self.user)
+        self.connection_accepted = False
 
         # apakah modul dengan serial_id ini ada di database
         self.modul = await self.get_modul()
@@ -121,13 +122,13 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
             # Pesan dari PERANGKAT: berisi 'device' sebagai kunci otentikasi
             if 'device' in data:
                 auth_id_from_device = data.get('device')
-                
-                # Validasi auth_id dari perangkat
                 if str(self.modul.auth_id) == auth_id_from_device:
+                    if 'schedule' in data:
+                        message = data.get('schedule') 
+                        await self.create_schedule_log(message)
+
                     # Jika ini pertama kali perangkat mengirim pesan, tambahkan ke grup
                     await self.add_to_group()
-                    
-                    # Siarkan pesan status ke grup
                     await self.broadcast_message_to_group(json.dumps(data))
                     print(f"WS> Pesan dari perangkat sah {self.serial_id} disiarkan: {text_data}")
                 else:
@@ -135,7 +136,6 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
             # Pesan dari USER: tidak berisi kunci 'device'
             else:
-                # apakah user yang mengirim pesan ini sah
                 if self.user.is_authenticated and await self.is_user_member_of_modul():
                     await self.broadcast_message_to_group(text_data)
                     print(f"WS> Pesan dari user sah {self.user.username} disiarkan: {text_data}")
@@ -189,3 +189,14 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         """Mengecek apakah user adalah member dari modul ini."""
         # Query many-to-many: cek apakah user ada di dalam `self.modul.user.all()`
         return self.modul.user.filter(pk=self.user.pk).exists()
+    
+    @database_sync_to_async
+    def create_schedule_log(self, message):
+        """
+        Fungsi untuk membuat objek ScheduleLog di database secara asynchronous.
+        """
+        try:
+            ScheduleLog.objects.create(modul=self.modul, message=message)
+            print(f"DB> Log berhasil dibuat untuk modul {self.modul.serial_id}.")
+        except Exception as e:
+            print(f"DB> GAGAL membuat log: {e}")

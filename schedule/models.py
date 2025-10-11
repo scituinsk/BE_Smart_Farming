@@ -43,3 +43,9 @@ class Alarm(models.Model):
             self.repeat_thursday, self.repeat_friday, self.repeat_saturday,
             self.repeat_sunday
         ])
+    
+class ScheduleLog(models.Model):
+    """ Tabel untuk menyimpan log dari schedule yang berhasil dijalankan oleh modul IoT """
+    modul = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='schedule_log')
+    message = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
