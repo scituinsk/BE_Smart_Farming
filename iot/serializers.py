@@ -18,8 +18,8 @@ class ModulSerializers(serializers.ModelSerializer):
     
     class Meta:
         model = Modul
-        fields = ['id','type','user', 'serial_id','auth_id', 'name', 'descriptions', 'feature','password', 'created_at']
-        read_only_fields = ['serial_id', 'feature']
+        fields = ['id','type','user', 'serial_id','auth_id', 'name', 'descriptions','image', 'feature','password', 'created_at']
+        read_only_fields = ['serial_id','auth_id', 'feature', 'created_at']
 
 # class DataModulSerializers(serializers.ModelSerializer):
 #     modul = serializers.SlugRelatedField(read_only=True,slug_field='name')

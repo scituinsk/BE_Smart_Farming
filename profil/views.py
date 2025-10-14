@@ -8,11 +8,15 @@ from .serializers import *
 
 class ProfileAPIView(APIView):
     def get(self, request):
+        if not request.user.is_authenticated:
+            return CustomResponse(success=True, message="Autentifikasi tidak valid silahkan login ulang.", status=status.HTTP_401_UNAUTHORIZED)
         profil = get_object_or_404(UserProfile, user = request.user)
         serializer = ProfileSerializers(profil)
         return CustomResponse(data = serializer.data, status=HTTP_200_OK)
     
     def patch(self, request):
+        if not request.user.is_authenticated:
+            return CustomResponse(success=True, message="Autentifikasi tidak valid silahkan login ulang.", status=status.HTTP_401_UNAUTHORIZED)
         profil = get_object_or_404(UserProfile, user = request.user)
         serializer = ProfileSerializers(profil, data= request.data, partial=True)
         if serializer.is_valid():
