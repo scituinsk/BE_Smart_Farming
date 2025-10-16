@@ -5,5 +5,5 @@ class ScheduleConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'schedule'
 
-    def ready(self):
-        import schedule.signals
+    # def ready(self):
+    #     import schedule.signals
