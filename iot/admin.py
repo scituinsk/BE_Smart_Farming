@@ -4,4 +4,5 @@ from .models import *
 # Register your models here.
 
 admin.site.register(Modul)
+admin.site.register(DataModul)
 admin.site.register(Feature)
