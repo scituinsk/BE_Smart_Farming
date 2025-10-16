@@ -31,9 +31,9 @@ class AlarmListCreateAPIView(APIView):
         if not modul.user.filter(username__iexact=request.user.username).exists():
             return CustomResponse(message="Anda tidak mempunyai modul ini", status=status.HTTP_403_FORBIDDEN)
         
-        # Cek apakah modul memiliki feature bernama 'penjadwalan'
-        if not modul.feature.filter(name__iexact='penjadwalan').exists():
-            return CustomResponse(message="Modul ini tidak memiliki fitur 'penjadwalan'.", data=None, status=status.HTTP_403_FORBIDDEN)
+        # Cek apakah modul memiliki feature bernama 'schedule'
+        if not modul.feature.filter(name__iexact='schedule').exists():
+            return CustomResponse(message="Modul ini tidak memiliki fitur 'schedule'.", data=None, status=status.HTTP_403_FORBIDDEN)
         
         serializer = AlarmSerializer(data=request.data)
         if serializer.is_valid():

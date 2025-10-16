@@ -32,7 +32,13 @@ class DataModul(models.Model):
     data = models.CharField(max_length=255, blank=True, null=True)
     last_data = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"{self.modul.name} - {self.feature.name}"
+
 class Feature(models.Model):
     """ Model feature yang hanya dapat dimodifikasi oleh admin """
     name = models.CharField(max_length=50)
     descriptions = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.name}"

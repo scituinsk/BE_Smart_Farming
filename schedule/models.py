@@ -49,3 +49,6 @@ class ScheduleLog(models.Model):
     modul = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='schedule_log')
     message = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.modul.serial_id} - {self.message}"
