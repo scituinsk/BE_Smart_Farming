@@ -14,13 +14,18 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 colorama==0.4.6
 constantly==23.10.4
+cron_descriptor==2.0.6
 cryptography==46.0.1
 daphne==4.2.1
 Django==5.2
+django-celery-beat==2.8.1
 django-cors-headers==4.8.0
+django-timezone-field==7.1
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
+dnspython==2.8.0
 drf-yasg==1.21.10
+eventlet==0.40.3
 greenlet==3.2.4
 hyperlink==21.0.0
 idna==3.10
@@ -38,6 +43,7 @@ pyasn1_modules==0.4.2
 pycparser==2.23
 PyJWT==2.10.1
 pyOpenSSL==25.3.0
+python-crontab==3.3.0
 python-dateutil==2.9.0.post0
 python-decouple==3.8
 pytz==2025.2
