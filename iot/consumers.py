@@ -135,6 +135,10 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                         message = data.get('humidity_data')
                         await self.update_humidity_data(message)
 
+                    if 'battery_data' in data:
+                        message = data.get('battery_data')
+                        await self.update_battery_data(message)
+                    
                     if 'water_level_data' in data:
                         message = data.get('water_level_data')
                         await self.update_water_level_data(message)
@@ -220,7 +224,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         """
         try:
             feature = Feature.objects.get(name='temperature')
-            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'message': message})
+            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'data': message})
 
             # Periksa boolean 'created'
             if created:
@@ -237,7 +241,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         """
         try:
             feature = Feature.objects.get(name='humidity')
-            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'message': message})
+            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'data': message})
 
             # Periksa boolean 'created'
             if created:
@@ -248,13 +252,30 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
             print(f"DB> GAGAL menambahkan data: {e}")
 
     @database_sync_to_async
+    def update_battery_data(self, message):
+        """
+        Fungsi untuk membuat objek ScheduleLog di database secara asynchronous.
+        """
+        try:
+            feature = Feature.objects.get(name='battery')
+            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'data': message})
+
+            # Periksa boolean 'created'
+            if created:
+                print(f"DB> Data battery BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
+            else:
+                print(f"DB> Data battery BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
+        except Exception as e:
+            print(f"DB> GAGAL menambahkan data: {e}")
+    
+    @database_sync_to_async
     def update_water_level_data(self, message):
         """
         Fungsi untuk membuat objek ScheduleLog di database secara asynchronous.
         """
         try:
             feature = Feature.objects.get(name='water_level')
-            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'message': message})
+            data_modul, created = DataModul.objects.update_or_create(modul=self.modul, feature=feature, defaults={'data': message})
 
             # Periksa boolean 'created'
             if created:

@@ -33,10 +33,10 @@ STREAMING_OFF
 ### 2. Mengirimkan data setiap sensor setiap 30 menit dan wajib mengirim data ketika mendapat perintah streaming <STREAMING_ON>
 ```json
 {
-    "device_data":"<auth_id>", // didapat dari variable yang ditanam di modul iot
+    "device":"<auth_id>", // didapat dari variable yang ditanam di modul iot
     "temperature_data":28, // dalam celcius
     "humidity_data":70, // persentase
-    "batrery_data":90, // presentase
+    "battery_data":90, // presentase
     "water_level_data": 80 //presentase
     // tambah sesuai keperluan
 }
