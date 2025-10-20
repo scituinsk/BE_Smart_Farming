@@ -11,6 +11,7 @@ class Alarm(models.Model):
 
     # Informasi dasar alaram
     label = models.CharField(max_length=100, blank=True, help_text="Label atau nama untuk alaram")
+    duration = models.BigIntegerField(default=0, help_text="Waktu alaram akan menyala (detik)")
     time = models.TimeField(help_text="Waktu alaram akan berbunyi (HH:MM:SS)")
     is_active = models.BooleanField(default=True, help_text="Status alaram aktif atau tidak")
     celery_task_id = models.CharField(max_length=255, blank=True, null=True, editable=False, help_text="ID dari tugas Celery yang dijadwalkan di background")

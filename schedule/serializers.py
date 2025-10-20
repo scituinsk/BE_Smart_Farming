@@ -6,7 +6,7 @@ class AlarmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alarm
         fields = [
-            'id', 'modul', 'label', 'time', 'is_active',
+            'id', 'modul', 'label','duration', 'time', 'is_active',
             'repeat_monday', 'repeat_tuesday', 'repeat_wednesday',
             'repeat_thursday', 'repeat_friday', 'repeat_saturday', 'repeat_sunday',
             'created_at', 'updated_at'

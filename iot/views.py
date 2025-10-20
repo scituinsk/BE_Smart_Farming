@@ -64,9 +64,12 @@ class ModulUserView(APIView):
     Endpoint untuk mengelola relasi user dengan Modul tertentu.
     Menggunakan field `serial_id` untuk identifikasi modul.
 
-    - GET:
+    - POST:
         Cek apakah user sudah memiliki akses ke modul.
         Jika belum, user harus memasukkan password yang valid untuk mendapatkan akses.
+
+    - GET:
+        Mengambil data jika user sudah terdaftar.
 
     - PATCH:
         Tambahkan user ke modul (klaim modul).
@@ -77,8 +80,8 @@ class ModulUserView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, serial_id):
-        modul = get_object_or_404(Modul, serial_id=serial_id)
+    def post(self, request, serial_id):
+        modul = get_object_or_404(Modul,serial_id=serial_id)
         if modul.user.filter(id=request.user.id).exists():
             serializer = ModulSerializers(modul)
             return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
@@ -93,6 +96,13 @@ class ModulUserView(APIView):
         modul.user.add(request.user)
         serializer = ModulSerializers(modul)
         return CustomResponse(success=True, message="Akses diberikan dan modul berhasil ditambahkan ke akun Anda", data=serializer.data, status=status.HTTP_200_OK)
+
+    def get(self, request, serial_id):
+        modul = get_object_or_404(Modul, serial_id=serial_id)
+        if modul.user.filter(id=request.user.id).exists():
+            serializer = ModulSerializers(modul)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(message="Silahkan klaim modul terlebih dahulu.", status=status.HTTP_401_UNAUTHORIZED)
 
     def patch(self, request, serial_id):
         modul = get_object_or_404(Modul, serial_id=serial_id)
