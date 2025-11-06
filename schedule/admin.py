@@ -5,3 +5,4 @@ from .models import *
 
 admin.site.register(Alarm)
 admin.site.register(ScheduleLog)
+admin.site.register(GroupSchedule)

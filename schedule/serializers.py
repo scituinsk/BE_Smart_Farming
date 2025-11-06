@@ -17,3 +17,17 @@ class ScheduleLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScheduleLog
         fields = ['id','modul', 'message', 'created_at']
+
+class GroupScheduleSerializer(serializers.ModelSerializer):
+    pins = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GroupSchedule
+        fields = ['id', 'schedule', 'name', 'pins']
+
+    def get_pins(self, obj):
+        """
+        Mengambil semua pin yang terkait dengan GroupSchedule ini melalui relasi ModulePin yang punya field 'group' = obj.
+        """
+        pins = ModulePin.objects.filter(group=obj)
+        return [{'name': p.name, 'pin': p.pin} for p in pins]

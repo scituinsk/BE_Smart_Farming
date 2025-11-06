@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from iot.models import Modul
+from iot.models import *
 
 class Alarm(models.Model):
     """
@@ -44,6 +44,13 @@ class Alarm(models.Model):
             self.repeat_thursday, self.repeat_friday, self.repeat_saturday,
             self.repeat_sunday
         ])
+    
+class GroupSchedule(models.Model):
+    schedule = models.ForeignKey(Alarm, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.schedule.label}"
     
 class ScheduleLog(models.Model):
     """ Tabel untuk menyimpan log dari schedule yang berhasil dijalankan oleh modul IoT """

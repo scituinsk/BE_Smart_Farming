@@ -42,3 +42,12 @@ class Feature(models.Model):
 
     def __str__(self):
         return f"{self.name}"
+
+class ModulePin(models.Model):
+    module = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='pins')
+    group = models.ForeignKey('schedule.GroupSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='pins')
+    name = models.CharField(max_length=20, blank=True, null=True)
+    pin = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.module.serial_id} - {self.pin}"

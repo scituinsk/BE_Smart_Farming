@@ -108,7 +108,7 @@ class ModulUserView(APIView):
         modul = get_object_or_404(Modul, serial_id=serial_id)
 
         if modul.user.filter(id=request.user.id).exists():
-            serializer = ModulSerializers(modul, data= request.data, partial=True)
+            serializer = ModulSerializers(modul, data= request.data, partial=True, context={'request': request})
             if serializer.is_valid():
                 serializer.save()
                 return CustomResponse(success=True, message="Device diperbarui", data=serializer.data, status=status.HTTP_200_OK)
@@ -171,6 +171,56 @@ class FeatureListView(APIView):
             return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED)
         return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+class ModulePinView(APIView):
+    """
+    Endpoint detail untuk mengelola Pin tertentu berdasarkan Modul IoT.
+
+    - GET:
+        Mengambil detail pin berdasarkan ID dan pemilik modul
+
+    - PATCH:
+        Update sebagian data pin (partial update).
+
+    - DELETE:
+        Hapus pin berdasarkan ID.
+        Hanya admin yang boleh menghapus.
+    """
+    permission_classes = [IsAuthenticated, AdminOnlyDelete, AdminOnlyPost]
+
+    def post(self, request, serial_id):
+        module = get_object_or_404(Modul, serial_id=serial_id)
+        serializer = ModulePinSerializers(data=request.data, context={'request': request, 'module': module})
+        if serializer.is_valid():
+            serializer.save(module=module)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED)
+        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, serial_id, pin=None):
+        if pin:
+            pin = get_object_or_404(ModulePin,pin=pin)
+            if not pin.module.user.filter(id=request.user.id).exists():
+                return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN)
+            serializer = ModulePinSerializers(pin)
+        else:
+            pins = ModulePin.objects.filter(module__serial_id = serial_id, module__user = request.user)
+            serializer = ModulePinSerializers(pins, many=True)
+        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request,serial_id, pin):
+        pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
+        if not pin.module.user.filter(id=request.user.id).exists():
+            return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN)
+        serializer = ModulePinSerializers(pin, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil diperbarui", data=serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, serial_id, pin):
+        pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
+        pin.delete()
+        return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil dihapus", data=None, status=status.HTTP_204_NO_CONTENT)
 
 class FeatureDetailView(APIView):
     """

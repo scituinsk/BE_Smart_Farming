@@ -8,4 +8,6 @@ urlpatterns = [
     path('<str:serial_id>/logs/', LogsListAPIView.as_view(), name='log-list'),
     path('alarms/', AlarmListCreateAPIView.as_view(), name='alarm-list-create'),
     path('alarms/<int:pk>/', AlarmDetailAPIView.as_view(), name='alarm-detail'),
+    path('groups/', GroupScheduleView.as_view()),
+    path('groups/<int:id>/', GroupScheduleView.as_view())
 ]

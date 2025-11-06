@@ -60,6 +60,47 @@ class ModulSerializers(serializers.ModelSerializer):
             result_list.append(feature_data)
             
         return result_list
+    
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        new_password = validated_data.get('password', None)
+
+        # bersihkan user lain jika password diubah
+        if new_password and instance.password != new_password:
+            users_to_remove = instance.user.exclude(id=request.user.id)
+            instance.user.remove(*users_to_remove)
+
+        return super().update(instance, validated_data)
+
+class ModulePinSerializers(serializers.ModelSerializer):
+    
+    class Meta:
+        model = ModulePin
+        fields = ['id', 'module', 'group', 'name', 'pin']
+        read_only_fields = ['module']
+
+    def validate(self, attrs):
+        """
+        Cegah duplikasi pin dalam modul yang sama
+        """
+        module = self.context.get('module')
+        if not module:
+            module = attrs.get('module')
+        pin = attrs.get('pin')
+        if module and ModulePin.objects.filter(module=module, pin=pin).exists():
+            raise serializers.ValidationError(f"Pin {pin} sudah digunakan pada modul {module.serial_id}.")
+        return attrs
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+
+        # Hanya admin yang boleh melakukan perubahan field terrtentu
+        if request and not request.user.is_staff:
+            if 'module' in validated_data:
+                validated_data.pop('module')
+            if 'pin' in validated_data:
+                validated_data.pop('pin')
+        return super().update(instance, validated_data)
 
 class contoh(serializers.ModelSerializer):
     

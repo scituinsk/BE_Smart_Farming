@@ -5,4 +5,5 @@ from .models import *
 
 admin.site.register(Modul)
 admin.site.register(DataModul)
+admin.site.register(ModulePin)
 admin.site.register(Feature)

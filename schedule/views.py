@@ -107,3 +107,65 @@ class LogsDeleteAPIView(APIView):
             return CustomResponse(message="Anda tidak memiliki izin untuk menghapus log ini.", status=status.HTTP_403_FORBIDDEN)
         log_object.delete()
         return CustomResponse(message="Log berhasil dihapus.", status=status.HTTP_200_OK)
+
+class GroupScheduleView(APIView):
+    "CRUD Grup Schedule dengan verifikasi user yang sudah terdaftar di modul dan tambahan informasi daftar pin yang terhubung"
+
+    permission_classes = [IsAuthenticated]
+
+    def _check_user_ownership(self, schedule, user):
+        """Pastikan user adalah pemilik modul dari schedule"""
+        module = schedule.modul
+        if not module.user.filter(id=user.id).exists():
+            return False
+        return True
+
+    def get(self, request, id=None):
+        if id:
+            group = get_object_or_404(GroupSchedule, id=id)
+            if not self._check_user_ownership(group.schedule, request.user):
+                return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+            serializer = GroupScheduleSerializer(group)
+            return CustomResponse(success=True, message="Detail group schedule", data=serializer.data)
+        else:
+            # Ambil semua group milik modul user (lewat schedule.modul.user)
+            groups = GroupSchedule.objects.filter(schedule__modul__user=request.user)
+            serializer = GroupScheduleSerializer(groups, many=True)
+            return CustomResponse(success=True, message="Daftar Group Schedule", data=serializer.data)
+
+    def post(self, request):
+        serializer = GroupScheduleSerializer(data=request.data)
+        if serializer.is_valid():
+            schedule = serializer.validated_data.get('schedule')
+            if not schedule:
+                return CustomResponse(success=False, message="Field schedule wajib diisi", status=status.HTTP_400_BAD_REQUEST)
+
+            if not self._check_user_ownership(schedule, request.user):
+                return CustomResponse(success=False, message="Anda bukan pemilik modul dari schedule ini", status=status.HTTP_403_FORBIDDEN )
+
+            serializer.save()
+            return CustomResponse(success=True, message="Group Schedule berhasil dibuat", data=serializer.data, status=status.HTTP_201_CREATED)
+
+        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, id):
+        group = get_object_or_404(GroupSchedule, id=id)
+        if not self._check_user_ownership(group.schedule, request.user):
+            return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+
+        serializer = GroupScheduleSerializer(group, data=request.data, partial=True)
+        if serializer.is_valid():
+            new_schedule = serializer.validated_data.get('schedule')
+            if new_schedule and not self._check_user_ownership(new_schedule, request.user):
+                return CustomResponse(success=False, message="Schedule baru tidak dimiliki oleh modul Anda", status=status.HTTP_403_FORBIDDEN )
+
+            serializer.save()
+            return CustomResponse(success=True, message="Group Schedule berhasil diperbarui", data=serializer.data)
+        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, id=None):
+        group = get_object_or_404(GroupSchedule, id=id)
+        if not self._check_user_ownership(group.schedule, request.user):
+            return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+        group.delete()
+        return CustomResponse(success=True, message="Group Schedule berhasil dihapus", status=status.HTTP_204_NO_CONTENT)
