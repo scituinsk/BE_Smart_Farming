@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Alarm
+from .models import Alarm, ModulePin
 
 @shared_task(name="trigger_alarm_task")
 def trigger_alarm_task(alarm_id):
@@ -13,24 +13,36 @@ def trigger_alarm_task(alarm_id):
     """
     try:
         alarm = Alarm.objects.get(pk=alarm_id)
+        module_pin = ModulePin.objects.filter(group=alarm.group)
+        pin_list = list(module_pin.values_list('pin', flat=True))
+
+        if not pin_list:
+            print(f"ALARM TASK: Tidak ada pin yang ditemukan untuk group {alarm.group.id} di alarm {alarm_id}.")
+            return
+        
+        pins_string = ",".join(str(p) for p in pin_list) # 1,2,3,4,5
     except Alarm.DoesNotExist:
         print(f"ALARM TASK: Alarm dengan ID {alarm_id} tidak ditemukan.")
         return
 
     # Kirim Pesan ke WebSocket
     channel_layer = get_channel_layer()
-    group_name = f'grup_{alarm.modul.serial_id}'
-    message_payload = {
-        'type': 'alarm_triggered',
-        'message': f"ALARM AKTIF: {alarm.label or 'Alarm'}"
-    }
+    group_name = f'grup_{alarm.group.modul.serial_id}'
+
+    # Payload message yang akan dikirim ke device
+    check = 0
+    pins = pins_string
+    duration = alarm.duration
+    schedule_id = alarm.id
+
+    message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}"
     
     print(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
             'type': 'channel.message',
-            'message': json.dumps(message_payload),
+            'message': message_payload,
             'sender_channel_name': 'celery_worker'
         }
     )
