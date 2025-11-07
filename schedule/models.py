@@ -1,13 +1,20 @@
 from django.db import models
 from django.contrib.auth.models import User
 from iot.models import *
+    
+class GroupSchedule(models.Model):
+    modul = models.ForeignKey(Modul, on_delete=models.CASCADE)
+    name = models.CharField(max_length=20, blank=True, null=True)
 
+    def __str__(self):
+        return f"{self.name} - {self.modul.name}"
+    
 class Alarm(models.Model):
     """
     Mewakili satu entitas alaram yang diatur oleh pengguna.
     """
     # Relasi ke modul yang memiliki alaram ini
-    modul = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='alarms', help_text="Modul pemilik alaram")
+    group = models.ForeignKey(GroupSchedule, on_delete=models.CASCADE, related_name='alarms', help_text="Modul pemilik alaram")
 
     # Informasi dasar alaram
     label = models.CharField(max_length=100, blank=True, help_text="Label atau nama untuk alaram")
@@ -34,7 +41,7 @@ class Alarm(models.Model):
         verbose_name_plural = "Daftar Alaram"
 
     def __str__(self):
-        return f"{self.label or 'Alaram'} - {self.time.strftime('%H:%M')} ({self.modul.serial_id})"
+        return f"{self.label or 'Alaram'} - {self.time.strftime('%H:%M')} ({self.group.name})"
 
     @property
     def is_repeating(self):
@@ -44,13 +51,6 @@ class Alarm(models.Model):
             self.repeat_thursday, self.repeat_friday, self.repeat_saturday,
             self.repeat_sunday
         ])
-    
-class GroupSchedule(models.Model):
-    schedule = models.ForeignKey(Alarm, on_delete=models.SET_NULL, null=True)
-    name = models.CharField(max_length=20, blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.name} - {self.schedule.label}"
     
 class ScheduleLog(models.Model):
     """ Tabel untuk menyimpan log dari schedule yang berhasil dijalankan oleh modul IoT """

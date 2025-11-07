@@ -6,7 +6,7 @@ class AlarmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alarm
         fields = [
-            'id', 'modul', 'label','duration', 'time', 'is_active',
+            'id', 'group', 'label','duration', 'time', 'is_active',
             'repeat_monday', 'repeat_tuesday', 'repeat_wednesday',
             'repeat_thursday', 'repeat_friday', 'repeat_saturday', 'repeat_sunday',
             'created_at', 'updated_at'
@@ -23,7 +23,7 @@ class GroupScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupSchedule
-        fields = ['id', 'schedule', 'name', 'pins']
+        fields = ['id', 'modul', 'name', 'pins']
 
     def get_pins(self, obj):
         """
