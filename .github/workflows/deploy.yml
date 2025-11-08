@@ -21,6 +21,6 @@ jobs:
           script: |
             cd /opt/production/smartfarming/BE_Smart_Farming
             git pull origin main
-            sudo docker compose build django_smartfarming
+            docker compose build django_smartfarming smartfarming_celery_worker smartfarming_celery_beat
             sudo docker compose run --rm django_smartfarming python manage.py migrate
             sudo docker compose up -d
