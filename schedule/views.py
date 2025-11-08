@@ -169,3 +169,25 @@ class GroupScheduleView(APIView):
             return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
         group.delete()
         return CustomResponse(success=True, message="Group Schedule berhasil dihapus", status=status.HTTP_204_NO_CONTENT)
+    
+class ListGroupAlarmAPIView(APIView):
+    """
+    View untuk mengambil list alarm di group (GET)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, id, user):
+        """
+        Helper method untuk mengambil objek alaram.
+        Memastikan objek ada dan dimiliki oleh pengguna yang benar.
+        """
+        try:
+            return Alarm.objects.filter(group__id=id, group__modul__user=user)
+        except Alarm.DoesNotExist:
+            raise Http404
+
+    def get(self, request, id):
+        """Mengambil list alaram."""
+        alarm = self.get_object(id, request.user)
+        serializer = AlarmSerializer(alarm, many=True)
+        return CustomResponse(data = serializer.data)

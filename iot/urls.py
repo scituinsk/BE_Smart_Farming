@@ -16,6 +16,7 @@ urlpatterns = [
     path('device/<uuid:serial_id>/qr/', ModulQRCodeView.as_view(), name='modul-qr-code'),
     path("device/<uuid:serial_id>/pin/<int:pin>/", ModulePinView.as_view(), name="device-pin-iot"),
     path("device/<uuid:serial_id>/pin/", ModulePinView.as_view(), name="device-pin-list"),
+    path("device/<uuid:serial_id>/groups/", ListModuleGroupView.as_view(), name="device-group-list"),
 
     # feature
     path("feature/", FeatureListView.as_view(), name="feature-list"),

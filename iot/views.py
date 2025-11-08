@@ -6,11 +6,14 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from smartfarming.utils.mqtt import publish_message
 from smartfarming.utils.exc_handler import CustomResponse
 from django.db.models import Sum, Count
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from smartfarming.utils.permissions import *
 from .models import *
 from .serializers import *
+from schedule.models import GroupSchedule
+from schedule.serializers import GroupScheduleSerializer
 
 class DeviceListAdminView(APIView):
     """
@@ -221,6 +224,28 @@ class ModulePinView(APIView):
         pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
         pin.delete()
         return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil dihapus", data=None, status=status.HTTP_204_NO_CONTENT)
+    
+class ListModuleGroupView(APIView):
+    """
+    View untuk mengambil list group di modul (GET)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, serial_id, user):
+        """
+        Helper method untuk mengambil objek group.
+        Memastikan objek ada dan dimiliki oleh pengguna yang benar.
+        """
+        try:
+            return GroupSchedule.objects.filter(modul__serial_id=serial_id, modul__user=user)
+        except GroupSchedule.DoesNotExist:
+            raise Http404
+
+    def get(self, request, serial_id):
+        """Mengambil list group."""
+        group = self.get_object(serial_id, request.user)
+        serializer = GroupScheduleSerializer(group, many=True)
+        return CustomResponse(data = serializer.data)
 
 class FeatureDetailView(APIView):
     """
