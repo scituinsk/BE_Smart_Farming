@@ -89,6 +89,8 @@ class ModulePinSerializers(serializers.ModelSerializer):
         pin = attrs.get('pin')
         if module and ModulePin.objects.filter(module=module, pin=pin).exists():
             raise serializers.ValidationError(f"Pin {pin} sudah digunakan pada modul {module.serial_id}.")
+        if int(pin) <= 0:
+            raise serializers.ValidationError(f"Nilai pin harus lebih dari 0 pin saat ini {pin}")
         return attrs
 
     def update(self, instance, validated_data):

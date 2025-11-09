@@ -201,7 +201,7 @@ class ModulePinView(APIView):
 
     def get(self, request, serial_id, pin=None):
         if pin:
-            pin = get_object_or_404(ModulePin,pin=pin)
+            pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
             if not pin.module.user.filter(id=request.user.id).exists():
                 return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN)
             serializer = ModulePinSerializers(pin)
