@@ -9,20 +9,15 @@ class ProfileSerializers(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name', required=False)
     last_name = serializers.CharField(source='user.last_name', required=False)
     modul_count = serializers.SerializerMethodField()
-    penjadwalan_count = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
         fields = [
-            'username', 'email', 'first_name', 'last_name', 'description', 'image', 'modul_count', 'penjadwalan_count'
+            'username', 'email', 'first_name', 'last_name', 'description', 'image', 'modul_count'
         ]
 
     def get_modul_count(self, obj):
         return obj.user.modul_set.count()
-
-    def get_penjadwalan_count(self, obj):
-        # hitung semua alarm dari seluruh modul yang dimiliki user
-        return Alarm.objects.filter(modul__user=obj.user).count()
     
     def update(self, instance, validated_data):
         # ambil data untuk model User jika ada
