@@ -34,8 +34,9 @@ def trigger_alarm_task(alarm_id):
     pins = pins_string
     duration = alarm.duration
     schedule_id = alarm.id
+    sequential = alarm.group.sequential
 
-    message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}"
+    message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}\nsequential={sequential}"
     
     print(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
     async_to_sync(channel_layer.group_send)(

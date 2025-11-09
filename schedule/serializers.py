@@ -23,7 +23,7 @@ class GroupScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupSchedule
-        fields = ['id', 'modul', 'name', 'pins']
+        fields = ['id', 'modul', 'name', 'sequential', 'pins']
 
     def get_pins(self, obj):
         """
@@ -35,9 +35,14 @@ class GroupScheduleSerializer(serializers.ModelSerializer):
     # grup tidak boleh pindah modul 
     def update(self, instance, validated_data):
         request = self.context.get('request')
+        sequential = validated_data.get('sequential')
+        pins = ModulePin.objects.filter(group=instance).count()
+
+        if sequential != None and sequential > pins:
+            raise serializers.ValidationError(f"Nilai {sequential} melebihi jumlah pin yang ada {pins}")
 
         # Hanya admin yang boleh melakukan perubahan field terrtentu
         if request and not request.user.is_staff:
             if 'modul' in validated_data:
-                validated_data.pop('modul')
+                validated_data.pop('modul', None)
         return super().update(instance, validated_data)

@@ -5,6 +5,7 @@ from iot.models import *
 class GroupSchedule(models.Model):
     modul = models.ForeignKey(Modul, on_delete=models.CASCADE)
     name = models.CharField(max_length=20, blank=True, null=True)
+    sequential = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.name} - {self.modul.name}"
