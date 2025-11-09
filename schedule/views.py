@@ -153,7 +153,7 @@ class GroupScheduleView(APIView):
         if not self._check_user_ownership(group.modul, request.user):
             return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
 
-        serializer = GroupScheduleSerializer(group, data=request.data, partial=True)
+        serializer = GroupScheduleSerializer(group, data=request.data, partial=True, context={'request':request})
         if serializer.is_valid():
             new_schedule = serializer.validated_data.get('schedule')
             if new_schedule and not self._check_user_ownership(new_schedule, request.user):

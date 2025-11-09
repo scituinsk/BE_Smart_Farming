@@ -31,3 +31,13 @@ class GroupScheduleSerializer(serializers.ModelSerializer):
         """
         pins = ModulePin.objects.filter(group=obj)
         return [{'name': p.name, 'pin': p.pin} for p in pins]
+    
+    # grup tidak boleh pindah modul 
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+
+        # Hanya admin yang boleh melakukan perubahan field terrtentu
+        if request and not request.user.is_staff:
+            if 'modul' in validated_data:
+                validated_data.pop('modul')
+        return super().update(instance, validated_data)
