@@ -29,11 +29,21 @@ class DataModul(models.Model):
     """ Model untuk menyimpan data terakhir dari modul menurut featurenya """
     modul = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='data')
     feature = models.ForeignKey('Feature', on_delete=models.CASCADE, related_name='data')
-    data = models.CharField(max_length=255, blank=True, null=True)
+    data = models.JSONField(blank=True, null=True)
     last_data = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.modul.name} - {self.feature.name}"
+
+# class DetailDataModul(models.Model):
+#     """ Model untuk menyimpan detail data terakhir dari modul menurut featurenya """
+#     data_modul = models.ForeignKey(DataModul, on_delete=models.CASCADE, related_name='detail_data_modul')
+#     name = models.CharField(max_length=255, blank=True, null=True)
+#     data = models.CharField(max_length=255, blank=True, null=True)
+#     last_data = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return f"{self.name} - {self.data_modul}"
 
 class Feature(models.Model):
     """ Model feature yang hanya dapat dimodifikasi oleh admin """
@@ -51,3 +61,9 @@ class ModulePin(models.Model):
 
     def __str__(self):
         return f"{self.module.serial_id} - {self.pin}"
+    
+
+# class ModuleLog(models.Model):
+#     module = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='pins')
+#     type = models.CharField(max_length=20, blank=True, null=True) # dari schedule atau modul?
+#     name = models.CharField(max_length=20, blank=True, null=True) # if schedule = nama grup penjadwalan

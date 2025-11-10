@@ -1,13 +1,14 @@
 # Format pesan antara IoT dan Server
 
 ## Server ke IoT
-### 1. Menyalakan Selenoit 1 selama 30 detik dan menonaktifkan selenoit 2 dan 3
+### 1. Menyalakan Selenoit 1 selama 30 detik dan menonaktifkan selenoit 2 dan 3 (dihitung berdasarkan sequential)
 
 ```markdown
 check=0
 relay=1,2,3 (gpio mana) 
 time=6 (detik) 
 schedule=<id_schedule>
+sequential=2 (pin/sequential)
 
 Mendapatkan data dari sensor
 check=1
@@ -34,10 +35,18 @@ STREAMING_OFF
 ```json
 {
     "device":"<auth_id>", // didapat dari variable yang ditanam di modul iot
-    "temperature_data":28, // dalam celcius
-    "humidity_data":70, // persentase
-    "battery_data":90, // presentase
-    "water_level_data": 80 //presentase
+    "temperature_data":[
+        {"name1": "value", "data1":45}
+    ], // dalam celcius
+    "humidity_data":[
+        {"name1": "value", "data1":45}
+    ], // persentase
+    "battery_data":[
+        {"name1": "value", "data1":45}
+    ], // presentase
+    "water_level_data": [
+        {"name1": "value", "data1":45}
+    ] //presentase
     // tambah sesuai keperluan
 }
 ```

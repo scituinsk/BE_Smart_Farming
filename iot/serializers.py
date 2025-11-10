@@ -36,30 +36,24 @@ class ModulSerializers(serializers.ModelSerializer):
         Method ini membuat list 'feature' secara dinamis, 
         menyisipkan nilai 'data' terakhir untuk setiap feature.
         """
-        # Dapatkan semua feature yang terhubung dengan modul ini
         features_queryset = modul_obj.feature.all()
+        datamodul_map = {
+            (dm.feature_id): dm.data
+            for dm in DataModul.objects
+                .filter(modul=modul_obj)
+                .order_by('feature', '-last_data')
+                .distinct('feature')
+        }
+
         result_list = []
-
         for feature_obj in features_queryset:
-            data_value = None
-            try:
-                # Cari data terakhir di DataModul yang cocok dengan modul DAN feature saat ini
-                latest_data = DataModul.objects.filter(
-                    modul=modul_obj, 
-                    feature=feature_obj
-                ).latest('last_data')
-                data_value = latest_data.data
-            except DataModul.DoesNotExist:
-                pass
-
-            feature_data = {
+            result_list.append({
                 'name': feature_obj.name,
                 'descriptions': feature_obj.descriptions,
-                'data': data_value
-            }
-            result_list.append(feature_data)
-            
+                'data': datamodul_map.get(feature_obj.id)
+            })
         return result_list
+
     
     def update(self, instance, validated_data):
         request = self.context.get('request')
@@ -73,40 +67,62 @@ class ModulSerializers(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class ModulePinSerializers(serializers.ModelSerializer):
-    
     class Meta:
         model = ModulePin
         fields = ['id', 'module', 'group', 'name', 'pin']
         read_only_fields = ['module']
 
+    def validate_pin(self, value):
+        """
+        Pastikan nilai pin valid (> 0)
+        """
+        if value <= 0:
+            raise serializers.ValidationError(f"Nilai pin harus lebih dari 0. Pin saat ini: {value}")
+        return value
+
     def validate(self, attrs):
         """
-        Cegah duplikasi pin dalam modul yang sama
+        Validasi untuk mencegah duplikasi pin per modul.
+        Aman untuk CREATE dan UPDATE.
         """
-        module = self.context.get('module')
-        if not module:
-            module = attrs.get('module')
+        # ambil pin baru dari attrs
         pin = attrs.get('pin')
-        if module and ModulePin.objects.filter(module=module, pin=pin).exists():
-            raise serializers.ValidationError(f"Pin {pin} sudah digunakan pada modul {module.serial_id}.")
-        if int(pin) <= 0:
-            raise serializers.ValidationError(f"Nilai pin harus lebih dari 0 pin saat ini {pin}")
+
+        # jika tidak ada perubahan pin (misalnya PATCH tanpa field ini), skip
+        if pin is None:
+            return attrs
+
+        # ambil module dari context, instance, atau data input
+        module = (
+            self.context.get('module') or
+            getattr(self.instance, 'module', None) or
+            attrs.get('module')
+        )
+
+        if not module:
+            raise serializers.ValidationError({"detail": "Konteks 'module' tidak ditemukan."})
+
+        # hanya cek ke DB jika create atau pin berubah
+        if not self.instance or (self.instance and pin != self.instance.pin):
+            qs = ModulePin.objects.filter(module=module, pin=pin)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                # ambil nama atau serial_id modul untuk pesan error
+                module_name = getattr(module, 'serial_id', None) or getattr(module, 'name', None) or str(module)
+                raise serializers.ValidationError(f"Pin {pin} sudah digunakan pada modul {module_name}.")
+
         return attrs
 
     def update(self, instance, validated_data):
+        """
+        Batasi perubahan field tertentu untuk non-admin user.
+        """
         request = self.context.get('request')
 
-        # Hanya admin yang boleh melakukan perubahan field terrtentu
-        if request and not request.user.is_staff:
-            if 'module' in validated_data:
-                validated_data.pop('module')
-            if 'pin' in validated_data:
-                validated_data.pop('pin')
-        return super().update(instance, validated_data)
+        # jika tidak ada request atau bukan staff, user tidak boleh ubah pin
+        if not (request and hasattr(request, 'user') and request.user.is_staff):
+            validated_data.pop('pin', None)
 
-class contoh(serializers.ModelSerializer):
-    
-    class Meta:
-        model = Modul
-        fields = []
-        read_only_fields = []
+        return super().update(instance, validated_data)
