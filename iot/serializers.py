@@ -69,7 +69,7 @@ class ModulSerializers(serializers.ModelSerializer):
 class ModulePinSerializers(serializers.ModelSerializer):
     class Meta:
         model = ModulePin
-        fields = ['id', 'module', 'group', 'name', 'pin']
+        fields = ['id', 'module', 'group', 'name','descriptions','status', 'pin']
         read_only_fields = ['module']
 
     def validate_pin(self, value):

@@ -45,7 +45,7 @@ class AlarmListCreateAPIView(APIView):
 
 class AlarmDetailAPIView(APIView):
     """
-    View untuk mengambil (GET), memperbarui (PUT), atau menghapus (DELETE) 
+    View untuk mengambil (GET), memperbarui (PATCH), atau menghapus (DELETE) 
     satu instance alaram.
     """
     permission_classes = [IsAuthenticated]
@@ -66,10 +66,10 @@ class AlarmDetailAPIView(APIView):
         serializer = AlarmSerializer(alarm)
         return CustomResponse(data = serializer.data)
 
-    def put(self, request, pk, format=None):
+    def patch(self, request, pk, format=None):
         """Memperbarui satu alaram."""
         alarm = self.get_object(pk, request.user)
-        serializer = AlarmSerializer(alarm, data=request.data)
+        serializer = AlarmSerializer(alarm, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return CustomResponse(data = serializer.data)
@@ -148,7 +148,7 @@ class GroupScheduleView(APIView):
 
         return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, id):
+    def patch(self, request, id):
         group = get_object_or_404(GroupSchedule, id=id)
         if not self._check_user_ownership(group.modul, request.user):
             return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )

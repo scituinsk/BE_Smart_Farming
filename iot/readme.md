@@ -36,16 +36,18 @@ STREAMING_OFF
 {
     "device":"<auth_id>", // didapat dari variable yang ditanam di modul iot
     "temperature_data":[
-        {"name1": "value", "data1":45}
+        {"name": "value", "data":45}
+        {"name": "value", "data":45}
+        {"name": "value", "data":45}
     ], // dalam celcius
     "humidity_data":[
-        {"name1": "value", "data1":45}
+        {"name": "value", "data":45}
     ], // persentase
     "battery_data":[
-        {"name1": "value", "data1":45}
+        {"name": "value", "data":45}
     ], // presentase
     "water_level_data": [
-        {"name1": "value", "data1":45}
+        {"name": "value", "data":45}
     ] //presentase
     // tambah sesuai keperluan
 }
