@@ -57,6 +57,7 @@ class ModulePin(models.Model):
     module = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='pins')
     group = models.ForeignKey('schedule.GroupSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='pins')
     name = models.CharField(max_length=20, blank=True, null=True)
+    type = models.CharField(max_length=20, blank=True, null=True)
     descriptions = models.CharField(max_length=50, blank=True, null=True)
     status = models.BooleanField(default=False)
     pin = models.IntegerField(default=0)
