@@ -3,6 +3,10 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from iot.models import *
 from schedule.models import ScheduleLog
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DeviceConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -14,14 +18,14 @@ class DeviceConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         await self.accept()
-        print(f"WS> Client {self.channel_name} connected to group '{self.group_name}'")
+        logger.info(f"WS> Client {self.channel_name} connected to group '{self.group_name}'")
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.group_name,
             self.channel_name
         )
-        print(f"WS> Client {self.channel_name} disconnected from group '{self.group_name}'")
+        logger.warning(f"WS> Client {self.channel_name} disconnected from group '{self.group_name}'")
 
     async def receive(self, text_data):
         """
@@ -29,7 +33,7 @@ class DeviceConsumer(AsyncWebsocketConsumer):
         dan menyiarkannya ke semua anggota LAIN dalam grup.
         Server tidak lagi menerjemahkan format, hanya meneruskan pesan apa adanya.
         """
-        print(f"WS> Received from {self.channel_name}, forwarding message: {text_data}")
+        logger.info(f"WS> Received from {self.channel_name}, forwarding message: {text_data}")
 
         # - Jika dari web, pesannya "PIN:CMD:DURASI_..."
         # - Jika dari ESP32, pesannya '{"status": {"2": "ON", ...}}'
@@ -56,7 +60,7 @@ class DeviceConsumer(AsyncWebsocketConsumer):
         # Hanya kirim pesan jika penerima BUKAN pengirim aslinya
         if self.channel_name != sender_channel_name:
             await self.send(text_data=message)
-            print(f"WS> Broadcasting to {self.channel_name}: {message}")
+            logger.info(f"WS> Broadcasting to {self.channel_name}: {message}")
 
 
 class DeviceAuthConsumer(AsyncWebsocketConsumer):
@@ -84,25 +88,25 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         # apakah modul dengan serial_id ini ada di database
         self.modul = await self.get_modul()
         if self.modul is None:
-            print(f"WS> REJECTED: Modul dengan serial_id {self.serial_id} tidak ditemukan.")
+            logger.warning(f"WS> REJECTED: Modul dengan serial_id {self.serial_id} tidak ditemukan.")
             await self.close()
             return
 
         if self.user.is_authenticated:
             is_member = await self.is_user_member_of_modul()
             if not is_member:
-                print(f"WS> REJECTED: User {self.user.username} tidak punya akses ke modul {self.serial_id}.")
+                logger.warning(f"WS> REJECTED: User {self.user.username} tidak punya akses ke modul {self.serial_id}.")
                 await self.close()
                 return
             
             # user sah, langsung tambahkan ke grup
             await self.add_to_group()
-            print(f"WS> User {self.user.username} ({self.channel_name}) terhubung ke grup '{self.group_name}'")
+            logger.info(f"WS> User {self.user.username} ({self.channel_name}) terhubung ke grup '{self.group_name}'")
         else:
             # Jika koneksi tanpa user (kemungkinan dari perangkat IoT),
             # kita terima koneksi tapi belum dimasukkan ke grup.
             # Perangkat harus mengirim pesan otentikasi terlebih dahulu.
-            print(f"WS> Perangkat ({self.channel_name}) terhubung, menunggu otentikasi untuk grup '{self.group_name}'")
+            logger.info(f"WS> Perangkat ({self.channel_name}) terhubung, menunggu otentikasi untuk grup '{self.group_name}'")
 
         # Terima koneksi
         await self.accept()
@@ -110,61 +114,92 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         """Dipanggil saat koneksi ditutup."""
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        print(f"WS> Client {self.channel_name} terputus dari grup '{self.group_name}'")
+        logger.warning(f"WS> Client {self.channel_name} terputus dari grup '{self.group_name}'")
 
     async def receive(self, text_data):
         """
-        Menerima pesan dari WebSocket client (baik user atau perangkat).
-        Memvalidasi pesan dan menyiarkannya ke grup.
+        Optimized receive method:
+        1. Parallel processing untuk penyimpanan DB sensor.
+        2. Structured error handling untuk tracing.
+        3. Efficient broadcasting.
         """
         try:
-            data = json.loads(text_data)
-            # Pesan dari PERANGKAT: berisi 'device' sebagai kunci otentikasi
+            # TRACING INPUT & PARSING
+            # Cek tipe data agar fleksibel (String/Bytes/Dict)
+            if isinstance(text_data, (dict, list)):
+                data = text_data
+                # Jika input sudah dict, kita butuh string-nya untuk broadcast hemat resource
+                payload_string = json.dumps(data) 
+            else:
+                # Jika text_data adalah string/bytes
+                data = json.loads(text_data)
+                payload_string = text_data
+
+            # LOGIC PEMROSESAN
+            
+            # KASUS A: Pesan dari PERANGKAT (Ada key 'device')
             if 'device' in data:
-                auth_id_from_device = data.get('device')
-                if str(self.modul.auth_id) == auth_id_from_device:
-                    if 'schedule_data' in data:
-                        message = data.get('schedule_data') 
-                        await self.create_schedule_log(message)
+                device_auth_id = data.get('device')
 
-                    if 'temperature_data' in data:
-                        message = data.get('temperature_data')
-                        await self.update_temperature_data(message)
+                # Validasi Auth
+                if str(self.modul.auth_id) != device_auth_id:
+                    logger.warning(f"WS-SECURITY> Device Auth Gagal. ID: {self.serial_id}, Input: {device_auth_id}")
+                    return
 
-                    if 'humidity_data' in data:
-                        message = data.get('humidity_data')
-                        await self.update_humidity_data(message)
+                # Mapping: Kunci JSON -> Fungsi Handler
+                # Tips: Jika nambah sensor baru, cukup tambah di sini.
+                sensor_handlers = {
+                    'schedule_data': self.create_schedule_log,
+                    'temperature_data': self.update_temperature_data,
+                    'humidity_data': self.update_humidity_data,
+                    'battery_data': self.update_battery_data,
+                    'water_level_data': self.update_water_level_data,
+                }
 
-                    if 'battery_data' in data:
-                        message = data.get('battery_data')
-                        await self.update_battery_data(message)
+                # Kumpulkan tugas (tasks) yang valid
+                tasks = []
+                for key, handler in sensor_handlers.items():
+                    if key in data:
+                        # panggil fungsi tapi jangan di-await dulu
+                        tasks.append(handler(data[key]))
+
+                # EFISIENSI: Jalankan semua update database secara PARALEL
+                if tasks:
+                    # return_exceptions=True agar jika 1 sensor error, yang lain tetap tersimpan
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
                     
-                    if 'water_level_data' in data:
-                        message = data.get('water_level_data')
-                        await self.update_water_level_data(message)
+                    # Tracing error parsial (misal suhu sukses, tapi baterai gagal)
+                    for i, res in enumerate(results):
+                        if isinstance(res, Exception):
+                            logger.error(f"WS-TASK> Error pada task sensor: {res}")
 
-                    # Jika ini pertama kali perangkat mengirim pesan, tambahkan ke grup
-                    await self.add_to_group()
-                    await self.broadcast_message_to_group(json.dumps(data))
-                    print(f"WS> Pesan dari perangkat sah {self.serial_id} disiarkan: {text_data}")
-                else:
-                    print(f"WS> GAGAL: Pesan dari perangkat {self.serial_id} dengan auth_id salah.")
+                # Logic Grup & Broadcast
+                await self.add_to_group()
+                await self.broadcast_message_to_group(payload_string) # Kirim string asli (hemat CPU)
+                
+                logger.info(f"WS-OK> Device {self.serial_id}: Data processed & broadcasted.")
 
-            # Pesan dari USER: tidak berisi kunci 'device'
+            # KASUS B: Pesan dari USER (Tidak ada key 'device')
             else:
-                if self.user.is_authenticated and await self.is_user_member_of_modul():
-                    await self.broadcast_message_to_group(text_data)
-                    print(f"WS> Pesan dari user sah {self.user.username} disiarkan: {text_data}")
-                else:
-                    print(f"WS> GAGAL: Pesan dari koneksi tidak sah di grup {self.group_name}.")
+                await self._handle_user_message(payload_string)
 
-        except json.JSONDecodeError:
-            # Jika pesan bukan JSON, anggap itu dari user (misalnya perintah string)
-            if self.user.is_authenticated and await self.is_user_member_of_modul():
-                await self.broadcast_message_to_group(text_data)
-                print(f"WS> Pesan dari user sah {self.user.username} disiarkan: {text_data}")
-            else:
-                print(f"WS> GAGAL: Pesan dari koneksi tidak sah di grup {self.group_name}.")
+        except json.JSONDecodeError as e:
+            # Error Parsing JSON spesifik
+            logger.error(f"WS-PARSE> JSON Error di baris {e.lineno}: {e.msg}. Data: {text_data[:50]}...")
+            # Fallback: Mungkin user kirim raw text, coba handle sebagai pesan user
+            await self._handle_user_message(text_data)
+
+        except Exception as e:
+            # Error tak terduga lainnya
+            logger.exception(f"WS-CRITICAL> Error tak terduga di receive: {str(e)}")
+
+    async def _handle_user_message(self, message):
+        """Helper untuk memproses pesan user agar kode utama rapi"""
+        if self.user.is_authenticated and await self.is_user_member_of_modul():
+            await self.broadcast_message_to_group(message)
+            logger.info(f"WS-USER> User {self.user.username} broadcast pesan.")
+        else:
+            logger.warning(f"WS-SECURITY> Akses user ditolak di grup {self.group_name}.")
 
     async def broadcast_message_to_group(self, message):
         """Helper untuk mengirim pesan ke channel layer."""
@@ -213,9 +248,9 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         """
         try:
             ScheduleLog.objects.create(modul=self.modul, message=message)
-            print(f"DB> Log berhasil dibuat untuk modul {self.modul.serial_id}.")
+            logger.info(f"DB> Log berhasil dibuat untuk modul {self.modul.serial_id}.")
         except Exception as e:
-            print(f"DB> GAGAL membuat log: {e}")
+            logger.exception(f"DB> GAGAL membuat log: {e}")
 
     @database_sync_to_async
     def update_temperature_data(self, message):
@@ -228,11 +263,11 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
             # Periksa boolean 'created'
             if created:
-                print(f"DB> Data temperatur BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data temperatur BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
             else:
-                print(f"DB> Data temperatur BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data temperatur BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
         except Exception as e:
-            print(f"DB> GAGAL menambahkan data: {e}")
+            logger.exception(f"DB> GAGAL menambahkan data: {e}")
 
     @database_sync_to_async
     def update_humidity_data(self, message):
@@ -245,11 +280,11 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
             # Periksa boolean 'created'
             if created:
-                print(f"DB> Data humidity BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data humidity BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
             else:
-                print(f"DB> Data humidity BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data humidity BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
         except Exception as e:
-            print(f"DB> GAGAL menambahkan data: {e}")
+            logger.exception(f"DB> GAGAL menambahkan data: {e}")
 
     @database_sync_to_async
     def update_battery_data(self, message):
@@ -262,11 +297,11 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
             # Periksa boolean 'created'
             if created:
-                print(f"DB> Data battery BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data battery BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
             else:
-                print(f"DB> Data battery BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data battery BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
         except Exception as e:
-            print(f"DB> GAGAL menambahkan data: {e}")
+            logger.exception(f"DB> GAGAL menambahkan data: {e}")
     
     @database_sync_to_async
     def update_water_level_data(self, message):
@@ -279,8 +314,8 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
             # Periksa boolean 'created'
             if created:
-                print(f"DB> Data water level BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data water level BERHASIL DIBUAT untuk modul {self.modul.serial_id}.")
             else:
-                print(f"DB> Data water level BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
+                logger.info(f"DB> Data water level BERHASIL DIUPDATE untuk modul {self.modul.serial_id}.")
         except Exception as e:
-            print(f"DB> GAGAL menambahkan data: {e}")
+            logger.exception(f"DB> GAGAL menambahkan data: {e}")

@@ -166,6 +166,38 @@ CHANNEL_LAYERS = {
     },
 }
 
+# LOGGING
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '{asctime} [{levelname}] {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        # Console tetap ada biar bisa liat di terminal saat dev
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        # Handler Custom WebSocket
+        'ws_logger': {
+            'level': 'INFO', # Bisa ubah ke DEBUG jika mau lebih detail
+            'class': 'smartfarming.utils.log_handler.WebSocketLogHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        '': {  # Root Logger (Menangkap SEMUA log dari semua apps)
+            'handlers': ['console', 'ws_logger'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
 REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 

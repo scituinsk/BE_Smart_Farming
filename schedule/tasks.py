@@ -1,10 +1,12 @@
-import json
+import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Alarm, ModulePin
+
+logger = logging.getLogger(__name__)
 
 @shared_task(name="trigger_alarm_task")
 def trigger_alarm_task(alarm_id):
@@ -17,12 +19,12 @@ def trigger_alarm_task(alarm_id):
         pin_list = list(module_pin.values_list('pin', flat=True))
 
         if not pin_list:
-            print(f"ALARM TASK: Tidak ada pin yang ditemukan untuk group {alarm.group.id} di alarm {alarm_id}.")
+            logging.warning(f"ALARM TASK: Tidak ada pin yang ditemukan untuk group {alarm.group.id} di alarm {alarm_id}.")
             return
         
         pins_string = ",".join(str(p) for p in pin_list) # 1,2,3,4,5
     except Alarm.DoesNotExist:
-        print(f"ALARM TASK: Alarm dengan ID {alarm_id} tidak ditemukan.")
+        logging.exception(f"ALARM TASK: Alarm dengan ID {alarm_id} tidak ditemukan.")
         return
 
     # Kirim Pesan ke WebSocket
@@ -38,7 +40,7 @@ def trigger_alarm_task(alarm_id):
 
     message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}\nsequential={sequential}"
     
-    print(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
+    logging.info(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
@@ -51,9 +53,9 @@ def trigger_alarm_task(alarm_id):
     if not alarm.is_repeating:
         alarm.is_active = False
         alarm.save(update_fields=['is_active'])
-        print(f"ALARM TASK: Alarm sekali jalan ID {alarm_id} telah dinonaktifkan.")
+        logging.info(f"ALARM TASK: Alarm sekali jalan ID {alarm_id} telah dinonaktifkan.")
         
-    print(f"ALARM TASK: Selesai memicu alarm ID {alarm_id}.")
+    logging.info(f"ALARM TASK: Selesai memicu alarm ID {alarm_id}.")
 
 
 @shared_task(name="check_and_run_due_alarms")
@@ -73,7 +75,7 @@ def check_and_run_due_alarms():
         time__minute=now.minute
     )
 
-    print(f"BEAT CHECKER ({now.strftime('%H:%M')}): Menemukan {alarms_due_now.count()} alarm yang cocok dengan waktu.")
+    logging.info(f"BEAT CHECKER ({now.strftime('%H:%M')}): Menemukan {alarms_due_now.count()} alarm yang cocok dengan waktu.")
 
     for alarm in alarms_due_now:
         # Cek apakah alarm dijadwalkan untuk hari ini
@@ -91,5 +93,5 @@ def check_and_run_due_alarms():
         # Jika lolos dari pengecekan di atas, berarti alarm boleh dijalankan:
         # - Entah karena ini alarm sekali jalan (is_repeating = False)
         # - Entah karena ini alarm berulang dan hari ini adalah jadwalnya
-        print(f"BEAT CHECKER: Mengirim tugas untuk Alarm ID {alarm.id} ke worker.")
+        logging.info(f"BEAT CHECKER: Mengirim tugas untuk Alarm ID {alarm.id} ke worker.")
         trigger_alarm_task.delay(alarm.id)
