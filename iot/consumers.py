@@ -147,7 +147,9 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
             # LOGIC PEMROSESAN
             
             # KASUS A: Pesan dari PERANGKAT (Ada key 'device')
-            if 'device' in data:
+            device_auth = data.get("device", None)
+
+            if device_auth is not None:
                 device_auth_id = data.get('device')
 
                 # Validasi Auth
