@@ -138,6 +138,12 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                 data = json.loads(text_data)
                 payload_string = text_data
 
+            # VALIDASI tipe data
+            if not isinstance(data, dict):
+                logger.warning(f"WS-PARSE> Payload bukan dictionary: {data} ({type(data)})")
+                await self._handle_user_message(payload_string)
+                return
+
             # LOGIC PEMROSESAN
             
             # KASUS A: Pesan dari PERANGKAT (Ada key 'device')
