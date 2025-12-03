@@ -10,5 +10,7 @@ urlpatterns = [
     path('alarms/<int:pk>/', AlarmDetailAPIView.as_view(), name='alarm-detail'),
     path('groups/', GroupScheduleView.as_view(), name='list-all-group'),
     path('groups/<int:id>/', GroupScheduleView.as_view(), name='detail-group'),
+    path('groups/<int:id>/<str:control>', ControlGroupScheduleView.as_view(), name='detail-group'),
+    path('groups/<int:id>/<str:control>', ControlGroupScheduleView.as_view(), name='detail-group'),
     path('group/<int:id>/alarms/', ListGroupAlarmAPIView.as_view(), name='list-group-alarm'),
 ]

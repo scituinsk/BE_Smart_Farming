@@ -18,6 +18,7 @@ class DeviceConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         await self.accept()
+        await self.send(text_data=json.dumps({"status": "Connected to Websocket"}))
         logger.info(f"WS> Client {self.channel_name} connected to group '{self.group_name}'")
 
     async def disconnect(self, close_code):
@@ -110,9 +111,11 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
         # Terima koneksi
         await self.accept()
+        await self.send(text_data=json.dumps({"status": "Connected to Websocket"}))
 
     async def disconnect(self, close_code):
         """Dipanggil saat koneksi ditutup."""
+        await self.send(text_data=json.dumps({"status": "Disconnected from Websocket"}))
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
         logger.warning(f"WS> Client {self.channel_name} terputus dari grup '{self.group_name}'")
 
@@ -185,7 +188,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
         except json.JSONDecodeError as e:
             # Error Parsing JSON spesifik
-            logger.error(f"WS-PARSE> JSON Error di baris {e.lineno}: {e.msg}. Data: {text_data[:50]}...")
+            logger.error(f"WS-PARSE> JSON Error di baris {e.lineno}: {e.msg}. Data: {text_data}...")
             # Fallback: Mungkin user kirim raw text, coba handle sebagai pesan user
             await self._handle_user_message(text_data)
 
@@ -247,8 +250,23 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         Fungsi untuk membuat objek ScheduleLog di database secara asynchronous.
         """
         try:
-            ScheduleLog.objects.create(modul=self.modul, message=message)
-            logger.info(f"DB> Log berhasil dibuat untuk modul {self.modul.serial_id}.")
+            msg_value = next((item.get('message') for item in message if isinstance(item, dict) and 'message' in item), None)
+            log =ScheduleLog.objects.create(modul=self.modul, message=msg_value)
+            if log:
+                logger.info(f"DB> Log berhasil dibuat untuk modul {self.modul.serial_id}.")
+
+            pins = next((item.get('pins') for item in message if isinstance(item, dict) and 'pins' in item), None )
+            if not pins :
+                return
+            for pin in pins:
+                for key, value in pin.items():
+                    obj = ModulePin.objects.get(module=self.modul, pin=key)
+                    obj.status = value == "1"
+                    obj.save(update_fields=["status"])
+            logger.info(f"DB> status pin berhasil diperbarui di modul {self.modul.serial_id}.")
+
+        except ModulePin.DoesNotExist:
+            logger.exception("Module Pin tidak ditemukan")
         except Exception as e:
             logger.exception(f"DB> GAGAL membuat log: {e}")
 

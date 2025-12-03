@@ -30,7 +30,7 @@ class GroupScheduleSerializer(serializers.ModelSerializer):
         Mengambil semua pin yang terkait dengan GroupSchedule ini melalui relasi ModulePin yang punya field 'group' = obj.
         """
         pins = ModulePin.objects.filter(group=obj)
-        return [{'name': p.name, 'pin': p.pin} for p in pins]
+        return [{'name': p.name, 'pin': p.pin, 'status': p.status} for p in pins]
     
     # grup tidak boleh pindah modul 
     def update(self, instance, validated_data):

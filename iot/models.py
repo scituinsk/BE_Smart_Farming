@@ -62,6 +62,14 @@ class ModulePin(models.Model):
     status = models.BooleanField(default=False)
     pin = models.IntegerField(default=0)
 
+    def set_off(self):
+        self.status = False
+        self.save(update_fields=['status'])
+    
+    def set_on(self):
+        self.status = True
+        self.save(update_fields=['status'])
+
     def __str__(self):
         return f"{self.module.serial_id} - {self.pin}"
     

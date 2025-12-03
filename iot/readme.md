@@ -22,12 +22,19 @@ STREAMING_OFF
 ```
 
 ## IoT ke server
-### 1. Mengirim status keberhasilan penyalaan selenoit
+### 1. Mengirim status keberhasilan penyalaan solenoit
 ```json
 {
     "device":"<auth_id>",
-    "schedule":"<id_schedule>", // mengembalikan id schedule yang dikirim server untuk inisiasi
-    "message":"Selenoit berhasil menyala" // pesan untuk ditampilkan ke log (opsional)
+    "schedule_data":[
+        {"schedule":"<id_schedule>"}, // mengembalikan id schedule yang dikirim server untuk inisiasi
+        {"message":"Solenoit berhasil menyala"}, // pesan untuk ditampilkan ke log (opsional)
+        {"pins": [
+            {"10":"1"} // 1 = True/On
+            {"13":"1"} // 0 = False/Off
+            {"15":"0"}
+        ]}
+    ]
 }
 ```
 

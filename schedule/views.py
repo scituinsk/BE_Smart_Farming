@@ -170,6 +170,30 @@ class GroupScheduleView(APIView):
         group.delete()
         return CustomResponse(success=True, message="Group Schedule berhasil dihapus", status=status.HTTP_204_NO_CONTENT)
     
+class ControlGroupScheduleView(APIView):
+        permission_classes = [IsAuthenticated]
+
+        def _check_user_ownership(self, modul, user):
+            """Pastikan user adalah pemilik modul dari schedule"""
+            if not modul.user.filter(id=user.id).exists():
+                return False
+            return True
+
+        def get(self, request, id, control):
+            group = get_object_or_404(GroupSchedule, id=id)
+            pins = ModulePin.objects.filter(group=group)
+            if not self._check_user_ownership(group.modul, request.user):
+                return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+            if control == 'on':
+                pins.update(status=True)
+            elif control == 'off':
+                pins.update(status=False)
+            else:
+                return CustomResponse(success=False, message="Tidak mengontrol pin.")
+            serializer = GroupScheduleSerializer(group)
+            return CustomResponse(success=True, message="Detail group schedule", data=serializer.data)
+
+
 class ListGroupAlarmAPIView(APIView):
     """
     View untuk mengambil list alarm di group (GET)
