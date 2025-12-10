@@ -49,6 +49,11 @@ def task_broadcast_module_notification(modul_id, title, body, data=None, exclude
 
         if data is None: 
             data = {}
+        if isinstance(data, str):
+            logger.warning(f"Data dikirim sebagai string, bukan dict: {data}")
+            # jSika string json valid, bisa diparse. Jika tidak, jadikan value
+            data = {"message_payload": data} 
+
         clean_data = {k: str(v) for k, v in data.items()}
         clean_data['module_serial_id'] = str(modul.serial_id)
 
@@ -60,9 +65,13 @@ def task_broadcast_module_notification(modul_id, title, body, data=None, exclude
                     data=clean_data
                 )
             )
-        logger.info(f"Mengirim broadcast notifikasi modul {modul_id}")
+            logger.info(f"Berhasil broadcast ke {devices.count()} device(s) untuk modul {modul_id}")
+        else:
+            logger.info(f"Tidak ada device aktif untuk modul {modul_id}")
             
     except Modul.DoesNotExist:
         logger.warning(f"Modul dengan id {modul_id} tidak ditemukan.")
     except Exception as e:
+        import traceback
         logger.error(f"Error broadcast notification: {e}")
+        logger.error(traceback.format_exc())
