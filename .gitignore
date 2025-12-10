@@ -18,7 +18,8 @@ cek/
 
 # 4. Ignore file konfigurasi yang bersifat pribadi
 .env
-teknohole-public.pem
+*.pem
+*credentials.json
 *.env
 config/settings/local.py  # Jika menggunakan pemisahan settings
 config/settings/dev.py  # Jika ada setting khusus untuk development

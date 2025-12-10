@@ -2,6 +2,8 @@ from decouple import config, Csv
 from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
+import firebase_admin
+from firebase_admin import credentials
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,6 +30,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'channels',
     'django_celery_beat',
+    'fcm_django',
 
     # Local apps
     'smartfarming',
@@ -209,3 +212,14 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Jakarta'
 CELERY_ENABLE_UTC = False
+
+# Konfigurasi FCM
+FCM_DJANGO_SETTINGS = {
+    "FCM_SERVER_KEY": "./firebase-credentials.json",
+    "ONE_DEVICE_PER_USER": False, # True jika ingin mengirim ke satu device saja, False untuk bulk
+    "DELETE_INACTIVE_DEVICES": True,
+}
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(FCM_DJANGO_SETTINGS["FCM_SERVER_KEY"])
+    firebase_admin.initialize_app(cred)

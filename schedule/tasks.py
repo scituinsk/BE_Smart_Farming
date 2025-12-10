@@ -5,6 +5,7 @@ from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Alarm, ModulePin
+from smartfarming.task import task_broadcast_module_notification
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ def trigger_alarm_task(alarm_id):
             'sender_channel_name': 'celery_worker'
         }
     )
+    task_broadcast_module_notification.delay(modul_id=alarm.group.modul.id, title=f"Alarm {alarm.label} group {alarm.group.name} dipicu!", body=message_payload, data=message_payload)
 
     if not alarm.is_repeating:
         alarm.is_active = False
