@@ -342,6 +342,19 @@ class ControlDeviceView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+class LogsListAllAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        """Mengambil detail log modul."""
+        logs = (
+        ModuleLog.objects.filter(module__user = request.user)
+            .select_related("module", "schedule")
+            .order_by("-created_at")
+            .distinct()
+            )
+        serializer = ModuleLogSerializer(logs, many=True)
+        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK)
+
 class LogsListAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, serial_id):

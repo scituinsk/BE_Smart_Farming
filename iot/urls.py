@@ -23,6 +23,7 @@ urlpatterns = [
     path("feature/<int:id>/", FeatureDetailView.as_view(), name="feature-detail"),
 
     # logs
+    path('device/logs/', LogsListAllAPIView.as_view(), name='log-all-list'),
     path('device/<str:serial_id>/logs/', LogsListAPIView.as_view(), name='log-list'),
     path('device/logs/<int:id>/', LogsDeleteAPIView.as_view(), name='log-delete'),
 ]
