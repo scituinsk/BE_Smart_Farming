@@ -65,3 +65,4 @@ sdk/
 
 # Celery
 celerybeat-schedule.*
+celerybeat-schedule

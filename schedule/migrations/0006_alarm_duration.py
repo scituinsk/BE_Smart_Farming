@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('schedule', '0005_schedulelog'),
+        ('schedule', '0004_alarm_celery_task_id'),
     ]
 
     operations = [

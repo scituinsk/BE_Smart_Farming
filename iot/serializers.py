@@ -126,3 +126,8 @@ class ModulePinSerializers(serializers.ModelSerializer):
             validated_data.pop('pin', None)
 
         return super().update(instance, validated_data)
+    
+class ModuleLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ModuleLog
+        fields = ['id', 'module', 'schedule', 'name', 'type','data','created_at']

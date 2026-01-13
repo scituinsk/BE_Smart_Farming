@@ -22,23 +22,41 @@ STREAMING_OFF
 ```
 
 ## IoT ke server
-### 1. Mengirim status keberhasilan penyalaan solenoit
+### 1. Mengirim Log Device ke server (perintah-feedback)
 ```json
 {
     "device":"<auth_id>",
-    "schedule_data":[
-        {"schedule":"<id_schedule>"}, // mengembalikan id schedule yang dikirim server untuk inisiasi
-        {"message":"Solenoit berhasil menyala"}, // pesan untuk ditampilkan ke log (opsional)
-        {"pins": [
-            {"10":"1"} // 1 = True/On
-            {"13":"1"} // 0 = False/Off
-            {"15":"0"}
-        ]}
-    ]
+    "device_logs":{
+        "schedule":"<id_schedule>", // mengembalikan id schedule yang dikirim server untuk inisiasi bawa penjadwalan berhasil (opsional)
+        "type": "value", // untuk menentukan logo di frontend (default = modul)
+        "name": "value", // untuk menentukan judul di frontend (diisi otomatis)
+        "data": {
+            // isi dengan format json
+            "message": "Penjadwalan telah selesai" // message if schedule != null
+        }
+    }
 }
 ```
 
-### 2. Mengirimkan data setiap sensor setiap 30 menit dan wajib mengirim data ketika mendapat perintah streaming <STREAMING_ON>
+### 2. Mengirim Perubahan Pin Via Log Device ke server (perintah-feedback)
+```json
+{
+    "device":"<auth_id>",
+    "device_logs":{
+        "schedule":<id_schedule>, // mengembalikan id schedule yang dikirim server untuk inisiasi bawa penjadwalan berhasil (opsional)
+        "type": "value", // untuk menentukan logo di frontend (default = modul)
+        "name": "value", // untuk menentukan judul di frontend (diisi otomatis)
+        "data": {
+            "pin": {
+                "on": [23, 2],
+                "off": [6, 12]
+            }
+        }
+    }
+}
+```
+
+### 3. Mengirimkan data setiap sensor setiap 30 menit dan wajib mengirim data ketika mendapat perintah streaming <STREAMING_ON>
 ```json
 {
     "device":"<auth_id>", // didapat dari variable yang ditanam di modul iot
@@ -60,7 +78,7 @@ STREAMING_OFF
 }
 ```
 
-### 3. Menjaga koneksi agar tidak timeout (60s)
+### 4. Menjaga koneksi agar tidak timeout (60s)
 ```json
 {
     "device":"<auth_id>"

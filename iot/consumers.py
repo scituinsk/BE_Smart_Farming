@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from iot.models import *
-from schedule.models import ScheduleLog
+from schedule.models import GroupSchedule
 import asyncio
 import logging
 
@@ -156,11 +156,13 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                 if str(self.modul.auth_id) != device_auth_id:
                     logger.warning(f"WS-SECURITY> Device Auth Gagal. ID: {self.serial_id}, Input: {device_auth_id}")
                     return
+                device_log_payload = data.get("device_logs")
+                if device_log_payload:
+                    await self.create_module_log(device_log_payload)
 
                 # Mapping: Kunci JSON -> Fungsi Handler
                 # Tips: Jika nambah sensor baru, cukup tambah di sini.
                 sensor_handlers = {
-                    'schedule_data': self.create_schedule_log,
                     'temperature_data': self.update_temperature_data,
                     'humidity_data': self.update_humidity_data,
                     'battery_data': self.update_battery_data,
@@ -253,30 +255,68 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
         return self.modul.user.filter(pk=self.user.pk).exists()
     
     @database_sync_to_async
-    def create_schedule_log(self, message):
-        """
-        Fungsi untuk membuat objek ScheduleLog di database secara asynchronous.
-        """
+    def create_module_log(self, payload: dict):
         try:
-            msg_value = next((item.get('message') for item in message if isinstance(item, dict) and 'message' in item), None)
-            log =ScheduleLog.objects.create(modul=self.modul, message=msg_value)
-            if log:
-                logger.info(f"DB> Log berhasil dibuat untuk modul {self.modul.serial_id}.")
+            # Ekstraksi Value dari payload
+            schedule_id = payload.get("schedule")
+            log_type = payload.get("type", "modul")
+            name = payload.get("name")
+            
+            log_data = payload.get("data", {}) 
 
-            pins = next((item.get('pins') for item in message if isinstance(item, dict) and 'pins' in item), None )
-            if not pins :
-                return
-            for pin in pins:
-                for key, value in pin.items():
-                    obj = ModulePin.objects.get(module=self.modul, pin=key)
-                    obj.status = value == "1"
-                    obj.save(update_fields=["status"])
-            logger.info(f"DB> status pin berhasil diperbarui di modul {self.modul.serial_id}.")
+            # Handle Schedule (Otomatisasi Nama)
+            schedule_obj = None
+            if schedule_id:
+                schedule_obj = GroupSchedule.objects.filter(id=schedule_id).first()
+                if schedule_obj and not name:
+                    name = schedule_obj.name
+            if name == None:
+                name = self.modul.name
 
-        except ModulePin.DoesNotExist:
-            logger.exception("Module Pin tidak ditemukan")
+            # Deteksi dan Update "ModulePin"
+            # Struktur baru: "data": {"pin": {"on": [...], "off": [...]}}
+            # Karena log_data adalah dictionary, kita tidak perlu looping.
+            
+            if isinstance(log_data, dict):
+                pin_config = log_data.get("pin")
+
+                if pin_config:
+                    # Ambil list pin yang harus ON dan OFF
+                    on_list = pin_config.get("on", [])
+                    off_list = pin_config.get("off", [])
+
+                    # --- Update Status ON ---
+                    if on_list:
+                        pins_to_on = ModulePin.objects.filter(
+                            module=self.modul, 
+                            pin__in=on_list
+                        )
+                        for p in pins_to_on:
+                            p.set_on()
+
+                    # --- Update Status OFF ---
+                    if off_list:
+                        pins_to_off = ModulePin.objects.filter(
+                            module=self.modul, 
+                            pin__in=off_list
+                        )
+                        for p in pins_to_off:
+                            p.set_off()
+
+            ModuleLog.objects.create(
+                module=self.modul,
+                schedule=schedule_obj,
+                type=log_type,
+                name=name,
+                data=log_data # Simpan data dict mentah
+            )
+
+            logger.info(
+                f"DB> Log dibuat | module={self.modul.serial_id} | type={log_type}"
+            )
+
         except Exception as e:
-            logger.exception(f"DB> GAGAL membuat log: {e}")
+            logger.exception(f"Gagal membuat ModuleLog: {e}")
 
     @database_sync_to_async
     def update_temperature_data(self, message):

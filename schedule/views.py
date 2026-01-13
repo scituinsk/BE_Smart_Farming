@@ -81,33 +81,6 @@ class AlarmDetailAPIView(APIView):
         alarm.delete()
         return CustomResponse(message="Alaram berhasil dihapus.",status=status.HTTP_204_NO_CONTENT)
     
-class LogsListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request, serial_id):
-        """Mengambil detail log modul."""
-        modul = get_object_or_404(Modul, serial_id=serial_id)
-        is_member = modul.user.filter(pk=request.user.pk).exists()
-
-        if not is_member:
-            return CustomResponse(message="Anda tidak memiliki izin untuk melihat log modul ini.", status=status.HTTP_403_FORBIDDEN)
-        logs = ScheduleLog.objects.filter(modul = modul)
-        serializer = ScheduleLogSerializer(logs, many=True)
-        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK)
-    
-class LogsDeleteAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, id):
-        """
-        Menghapus satu entitas log berdasarkan ID-nya.
-        """
-        log_object = get_object_or_404(ScheduleLog, id=id)
-        is_member = log_object.modul.user.filter(pk=request.user.pk).exists()
-
-        if not is_member:
-            return CustomResponse(message="Anda tidak memiliki izin untuk menghapus log ini.", status=status.HTTP_403_FORBIDDEN)
-        log_object.delete()
-        return CustomResponse(message="Log berhasil dihapus.", status=status.HTTP_200_OK)
 
 class GroupScheduleView(APIView):
     "CRUD Grup Schedule dengan verifikasi user yang sudah terdaftar di modul dan tambahan informasi daftar pin yang terhubung"

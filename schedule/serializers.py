@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import *
+from iot.models import ModulePin
+from schedule.models import Alarm, GroupSchedule
 
 class AlarmSerializer(serializers.ModelSerializer):
 
@@ -12,11 +13,6 @@ class AlarmSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
 
-class ScheduleLogSerializer(serializers.ModelSerializer):
-    modul = serializers.SlugRelatedField(read_only=True,slug_field='name')
-    class Meta:
-        model = ScheduleLog
-        fields = ['id','modul', 'message', 'created_at']
 
 class GroupScheduleSerializer(serializers.ModelSerializer):
     pins = serializers.SerializerMethodField()

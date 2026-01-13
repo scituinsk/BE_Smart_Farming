@@ -74,7 +74,13 @@ class ModulePin(models.Model):
         return f"{self.module.serial_id} - {self.pin}"
     
 
-# class ModuleLog(models.Model):
-#     module = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='pins')
-#     type = models.CharField(max_length=20, blank=True, null=True) # dari schedule atau modul?
-#     name = models.CharField(max_length=20, blank=True, null=True) # if schedule = nama grup penjadwalan
+class ModuleLog(models.Model):
+    module = models.ForeignKey(Modul, on_delete=models.CASCADE, related_name='log_modul')
+    schedule = models.ForeignKey("schedule.GroupSchedule", blank=True, null=True, on_delete=models.SET_NULL, related_name='log_group') # null = bukan dari schedule
+    type = models.CharField(max_length=20, blank=True, null=True, default="modul") # dari schedule atau modul? if schedule: type = schedule
+    name = models.CharField(max_length=20, blank=True, null=True) # if schedule = nama grup penjadwalan
+    data = models.JSONField(default=dict) # data bebas dalam json
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.module.serial_id} - {self.name}"

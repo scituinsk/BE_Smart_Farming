@@ -341,3 +341,31 @@ class ControlDeviceView(APIView):
                 {"error": "Failed to send command via MQTT."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class LogsListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, serial_id):
+        """Mengambil detail log modul."""
+        modul = get_object_or_404(Modul, serial_id=serial_id)
+        is_member = modul.user.filter(pk=request.user.pk).exists()
+
+        if not is_member:
+            return CustomResponse(message="Anda tidak memiliki izin untuk melihat log modul ini.", status=status.HTTP_403_FORBIDDEN)
+        logs = ModuleLog.objects.filter(module = modul)
+        serializer = ModuleLogSerializer(logs, many=True)
+        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK)
+    
+class LogsDeleteAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, id):
+        """
+        Menghapus satu entitas log berdasarkan ID-nya.
+        """
+        log_object = get_object_or_404(ModuleLog, id=id)
+        is_member = log_object.module.user.filter(pk=request.user.pk).exists()
+
+        if not is_member:
+            return CustomResponse(message="Anda tidak memiliki izin untuk menghapus log ini.", status=status.HTTP_403_FORBIDDEN)
+        log_object.delete()
+        return CustomResponse(message="Log berhasil dihapus.", status=status.HTTP_200_OK)

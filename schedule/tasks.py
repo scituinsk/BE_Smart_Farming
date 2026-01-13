@@ -4,7 +4,8 @@ from zoneinfo import ZoneInfo
 from celery import shared_task
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Alarm, ModulePin
+from schedule.models import Alarm, GroupSchedule
+from iot.models import ModulePin, ModuleLog
 from smartfarming.task import task_broadcast_module_notification
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,16 @@ def trigger_alarm_task(alarm_id):
     message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}\nsequential={sequential}"
     
     logging.info(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
+    
+    log_data = {"message": "Penjadwalan telah dimulai"}
+    ModuleLog.objects.create(
+        module=alarm.group.modul,
+        schedule=GroupSchedule.objects.get(id=alarm.group.id),
+        type="schedule",
+        name=alarm.group.name,
+        data=log_data
+    )
+
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
