@@ -78,7 +78,7 @@ def check_and_run_due_alarms():
     Tugas ini akan mencari semua alarm yang jatuh tempo 'sekarang'
     dan mengirimkannya ke worker.
     """
-    now = datetime.now(ZoneInfo("Asia/Jakarta"))
+    now = datetime.now(ZoneInfo("UTC"))
     current_day_index = now.weekday()  # Senin=0, ..., Minggu=6
     
     # Ambil semua alarm yang aktif dan waktunya cocok dengan jam dan menit saat ini

@@ -17,8 +17,8 @@ class RegistrationView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            return CustomResponse(message = "User registered successfully!", status=status.HTTP_201_CREATED)
-        return CustomResponse(success=False,errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(message = "User registered successfully!", status=status.HTTP_201_CREATED, request=request)
+        return CustomResponse(success=False,message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
 
 class LoginView(APIView):
@@ -28,12 +28,12 @@ class LoginView(APIView):
         password = request.data.get('password')
 
         if not identifier or not password:
-            return CustomResponse(success=False, errors = 'Identifier dan password wajib diisi.', status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, message = 'Identifier dan password wajib diisi.', status=status.HTTP_400_BAD_REQUEST, request=request)
 
         try:
             user = User.objects.get(Q(username=identifier) | Q(email=identifier))
         except User.DoesNotExist:
-            return CustomResponse(message='User tidak terdaftar',success=False, errors = 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
+            return CustomResponse(message='User tidak terdaftar',success=False, status=status.HTTP_401_UNAUTHORIZED, request=request)
 
         user_authenticated = authenticate(username=user.username, password=password)
 
@@ -48,8 +48,8 @@ class LoginView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'user': user_data
-            }, message="Login berhasil!", status=status.HTTP_200_OK)
-        return CustomResponse(message='Username atau password salah' ,errors= 'Invalid credentials', status=status.HTTP_401_UNAUTHORIZED)
+            }, message="Login berhasil!", status=status.HTTP_200_OK, request=request)
+        return CustomResponse(message='Username atau password salah' , status=status.HTTP_401_UNAUTHORIZED, request=request)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]  # Hanya user yang terautentikasi yang bisa logout
@@ -58,16 +58,16 @@ class LogoutView(APIView):
         refresh_token = request.data.get("refresh")
 
         if not refresh_token:
-            return CustomResponse(success=False, errors = "Refresh token is required", status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, message = "Refresh token is required", status=status.HTTP_400_BAD_REQUEST, request=request)
 
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()  # Memasukkan token ke blacklist
-            return CustomResponse(message= "Logout successful", status=status.HTTP_205_RESET_CONTENT)
+            return CustomResponse(message= "Logout successful", status=status.HTTP_205_RESET_CONTENT, request=request)
         except TokenError:  # Menangani token yang tidak valid atau sudah kadaluarsa
-            return CustomResponse(success=False, errors = "Invalid or expired refresh token", status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, message = "Invalid or expired refresh token", status=status.HTTP_400_BAD_REQUEST, request=request)
         except Exception as e:
-            return CustomResponse(success=False, errors = str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return CustomResponse(success=False, message = str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR, request=request)
 
 class ResetPasswordView(APIView):
 
@@ -81,7 +81,7 @@ class ResetPasswordView(APIView):
             reset_token = get_random_string(32)
 
             # Kirim email reset password
-            reset_link = f"https://scit.com/reset-password/{reset_token}"
+            reset_link = f"https://scituinsk.com/reset-password/{reset_token}"
             send_mail(
                 "Reset Password",
                 f"Klik link berikut untuk reset password: {reset_link}",
@@ -89,8 +89,8 @@ class ResetPasswordView(APIView):
                 [email],
                 fail_silently=False,
             )
-            return CustomResponse(message='Silakan cek email untuk reset password', status=status.HTTP_200_OK)
-        return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(message='Silakan cek email untuk reset password', status=status.HTTP_200_OK, request=request)
+        return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
 class AuthView(APIView):
     def get(self, request):
@@ -102,5 +102,5 @@ class AuthView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name
             }
-            return CustomResponse(data = context, status=status.HTTP_200_OK)
-        return CustomResponse(success=False, errors = 'Not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+            return CustomResponse(data = context, status=status.HTTP_200_OK, request=request)
+        return CustomResponse(success=False, message = 'Not authenticated', status=status.HTTP_401_UNAUTHORIZED, request=request)

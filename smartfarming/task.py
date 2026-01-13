@@ -67,11 +67,6 @@ def task_broadcast_module_notification(modul_id, title, body, data=None, exclude
             )
             logger.info(f"Berhasil broadcast ke {devices.count()} device(s) untuk modul {modul_id}")
         else:
-            devices.send_message(
-                message=Message(
-                    notification=Notification(title=f"Device {modul.name} tidak aktif untuk menerima tugas!", body=body)
-                )
-            )
             logger.info(f"Device {modul.name} tidak aktif")
             
             

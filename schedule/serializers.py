@@ -42,3 +42,8 @@ class GroupScheduleSerializer(serializers.ModelSerializer):
             if 'modul' in validated_data:
                 validated_data.pop('modul', None)
         return super().update(instance, validated_data)
+    
+    def get_created_at(self, obj):
+        return obj.created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    def get_updated_at(self, obj):
+        return obj.created_at.strftime("%Y-%m-%dT%H:%M:%SZ")

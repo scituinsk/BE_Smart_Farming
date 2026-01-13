@@ -20,27 +20,27 @@ class AlarmListCreateAPIView(APIView):
         """Mengembalikan daftar alaram milik pengguna yang sedang login."""
         alarms = Alarm.objects.filter(group__modul__user=request.user)
         serializer = AlarmSerializer(alarms, many=True)
-        return CustomResponse(success= True, message= "Daftar alarm User",data = serializer.data)
+        return CustomResponse(success= True, message= "Daftar alarm User",data = serializer.data, request=request)
 
     def post(self, request, format=None):
         """Membuat alaram baru untuk pengguna yang sedang login."""
         try :
             group = get_object_or_404(GroupSchedule, id=request.data.get("group"))
         except:
-            return CustomResponse(message="Group tidak ditemukan", status=status.HTTP_404_NOT_FOUND)
+            return CustomResponse(message="Group tidak ditemukan", status=status.HTTP_404_NOT_FOUND, request=request)
 
         if not group.modul.user.filter(username__iexact=request.user.username).exists():
-            return CustomResponse(message="Anda tidak mempunyai modul ini", status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(message="Anda tidak mempunyai modul ini", status=status.HTTP_403_FORBIDDEN, request=request)
         
         # Cek apakah modul memiliki feature bernama 'schedule'
         if not group.modul.feature.filter(name__iexact='schedule').exists():
-            return CustomResponse(message="Modul ini tidak memiliki fitur 'schedule'.", data=None, status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(message="Modul ini tidak memiliki fitur 'schedule'.", data=None, status=status.HTTP_403_FORBIDDEN, request=request)
         
         serializer = AlarmSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save() 
-            return CustomResponse(message="Alaram berhasil ditambahkan.",data = serializer.data, status=status.HTTP_201_CREATED)
-        return CustomResponse(message="Masukkan dengan format (HH:MM:SS).", data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(message="Alaram berhasil ditambahkan.",data = serializer.data, status=status.HTTP_201_CREATED, request=request)
+        return CustomResponse(message="Masukkan dengan format (HH:MM:SS).", data=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
 
 class AlarmDetailAPIView(APIView):
@@ -64,7 +64,7 @@ class AlarmDetailAPIView(APIView):
         """Mengambil detail satu alaram."""
         alarm = self.get_object(pk, request.user)
         serializer = AlarmSerializer(alarm)
-        return CustomResponse(data = serializer.data)
+        return CustomResponse(data = serializer.data, request=request)
 
     def patch(self, request, pk, format=None):
         """Memperbarui satu alaram."""
@@ -72,14 +72,14 @@ class AlarmDetailAPIView(APIView):
         serializer = AlarmSerializer(alarm, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return CustomResponse(data = serializer.data)
-        return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(data = serializer.data, request=request)
+        return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
     def delete(self, request, pk, format=None):
         """Menghapus satu alaram."""
         alarm = self.get_object(pk, request.user)
         alarm.delete()
-        return CustomResponse(message="Alaram berhasil dihapus.",status=status.HTTP_204_NO_CONTENT)
+        return CustomResponse(message="Alaram berhasil dihapus.",status=status.HTTP_204_NO_CONTENT, request=request)
     
 
 class GroupScheduleView(APIView):
@@ -97,51 +97,51 @@ class GroupScheduleView(APIView):
         if id:
             group = get_object_or_404(GroupSchedule, id=id)
             if not self._check_user_ownership(group.modul, request.user):
-                return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+                return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN , request=request)
             serializer = GroupScheduleSerializer(group)
-            return CustomResponse(success=True, message="Detail group schedule", data=serializer.data)
+            return CustomResponse(success=True, message="Detail group schedule", data=serializer.data, request=request)
         else:
             # Ambil semua group milik modul user (lewat modul.user)
             groups = GroupSchedule.objects.filter(modul__user=request.user)
             serializer = GroupScheduleSerializer(groups, many=True)
-            return CustomResponse(success=True, message="Daftar Group Schedule", data=serializer.data)
+            return CustomResponse(success=True, message="Daftar Group Schedule", data=serializer.data, request=request)
 
     def post(self, request):
         serializer = GroupScheduleSerializer(data=request.data)
         if serializer.is_valid():
             modul = serializer.validated_data.get('modul')
             if not modul:
-                return CustomResponse(success=False, message="Field modul wajib diisi", status=status.HTTP_400_BAD_REQUEST)
+                return CustomResponse(success=False, message="Field modul wajib diisi", status=status.HTTP_400_BAD_REQUEST, request=request)
 
             if not self._check_user_ownership(modul, request.user):
-                return CustomResponse(success=False, message="Anda bukan pemilik modul dari schedule ini", status=status.HTTP_403_FORBIDDEN )
+                return CustomResponse(success=False, message="Anda bukan pemilik modul dari schedule ini", status=status.HTTP_403_FORBIDDEN , request=request)
 
             serializer.save()
-            return CustomResponse(success=True, message="Group Schedule berhasil dibuat", data=serializer.data, status=status.HTTP_201_CREATED)
+            return CustomResponse(success=True, message="Group Schedule berhasil dibuat", data=serializer.data, status=status.HTTP_201_CREATED, request=request)
 
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
     def patch(self, request, id):
         group = get_object_or_404(GroupSchedule, id=id)
         if not self._check_user_ownership(group.modul, request.user):
-            return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+            return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN , request=request)
 
         serializer = GroupScheduleSerializer(group, data=request.data, partial=True, context={'request':request})
         if serializer.is_valid():
             new_schedule = serializer.validated_data.get('schedule')
             if new_schedule and not self._check_user_ownership(new_schedule, request.user):
-                return CustomResponse(success=False, message="Schedule baru tidak dimiliki oleh modul Anda", status=status.HTTP_403_FORBIDDEN )
+                return CustomResponse(success=False, message="Schedule baru tidak dimiliki oleh modul Anda", status=status.HTTP_403_FORBIDDEN , request=request)
 
             serializer.save()
-            return CustomResponse(success=True, message="Group Schedule berhasil diperbarui", data=serializer.data)
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=True, message="Group Schedule berhasil diperbarui", data=serializer.data, request=request)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
     def delete(self, request, id=None):
         group = get_object_or_404(GroupSchedule, id=id)
         if not self._check_user_ownership(group.modul, request.user):
-            return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+            return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN , request=request)
         group.delete()
-        return CustomResponse(success=True, message="Group Schedule berhasil dihapus", status=status.HTTP_204_NO_CONTENT)
+        return CustomResponse(success=True, message="Group Schedule berhasil dihapus", status=status.HTTP_204_NO_CONTENT, request=request)
     
 class ControlGroupScheduleView(APIView):
         permission_classes = [IsAuthenticated]
@@ -156,15 +156,15 @@ class ControlGroupScheduleView(APIView):
             group = get_object_or_404(GroupSchedule, id=id)
             pins = ModulePin.objects.filter(group=group)
             if not self._check_user_ownership(group.modul, request.user):
-                return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN )
+                return CustomResponse(success=False, message="Anda bukan pemilik modul dari jadwal ini", status=status.HTTP_403_FORBIDDEN , request=request)
             if control == 'on':
                 pins.update(status=True)
             elif control == 'off':
                 pins.update(status=False)
             else:
-                return CustomResponse(success=False, message="Tidak mengontrol pin.")
+                return CustomResponse(success=False, message="Tidak mengontrol pin.", request=request)
             serializer = GroupScheduleSerializer(group)
-            return CustomResponse(success=True, message="Detail group schedule", data=serializer.data)
+            return CustomResponse(success=True, message="Detail group schedule", data=serializer.data, request=request)
 
 
 class ListGroupAlarmAPIView(APIView):
@@ -187,4 +187,4 @@ class ListGroupAlarmAPIView(APIView):
         """Mengambil list alaram."""
         alarm = self.get_object(id, request.user)
         serializer = AlarmSerializer(alarm, many=True)
-        return CustomResponse(data = serializer.data)
+        return CustomResponse(data = serializer.data, request=request)

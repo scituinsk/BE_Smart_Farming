@@ -32,14 +32,14 @@ class DeviceListAdminView(APIView):
     def get(self, request):
         queryset = Modul.objects.all().order_by('name')
         serializer = ModulSerializers(queryset, many=True)
-        return CustomResponse(success=True, status=status.HTTP_200_OK, message="Success", data=serializer.data)
+        return CustomResponse(success=True, status=status.HTTP_200_OK, message="Success", data=serializer.data, request=request)
 
     def post(self, request):
         serializer = ModulSerializers(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED)
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED, request=request)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
 
 class DeviceDetailAdminView(APIView):
@@ -53,13 +53,13 @@ class DeviceDetailAdminView(APIView):
         serializer = ModulSerializers(modul, data= request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return CustomResponse(success=True, message="Device diperbarui", data=serializer.data, status=status.HTTP_200_OK)
-        return CustomResponse(success=True, message="User sudah terhubung dengan modul ini", data=None, status=status.HTTP_200_OK)
+            return CustomResponse(success=True, message="Device diperbarui", data=serializer.data, status=status.HTTP_200_OK, request=request)
+        return CustomResponse(success=True, message="User sudah terhubung dengan modul ini", data=None, status=status.HTTP_200_OK, request=request)
 
     def delete(self, request, pk):
         modul = get_object_or_404(Modul, pk=pk)
         modul.delete()
-        return CustomResponse(success=True, message=f"Modul dengan id {pk} berhasil dihapus", status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message=f"Modul dengan id {pk} berhasil dihapus", status=status.HTTP_200_OK, request=request)
 
 
 class ModulUserView(APIView):
@@ -87,25 +87,25 @@ class ModulUserView(APIView):
         modul = get_object_or_404(Modul,serial_id=serial_id)
         if modul.user.filter(id=request.user.id).exists():
             serializer = ModulSerializers(modul)
-            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, request=request)
 
         password = request.data.get("password")
         if not password:
-            return CustomResponse(success=False, message="password diperlukan untuk mengakses modul ini", errors={"password": ["Field required"]}, status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(success=False, message="password diperlukan untuk mengakses modul ini", status=status.HTTP_403_FORBIDDEN, request=request)
 
         if password != modul.password:
-            return CustomResponse(success=False, message="password salah", errors={"password": ["Invalid password"]}, status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(success=False, message="password salah", status=status.HTTP_403_FORBIDDEN, request=request)
 
         modul.user.add(request.user)
         serializer = ModulSerializers(modul)
-        return CustomResponse(success=True, message="Akses diberikan dan modul berhasil ditambahkan ke akun Anda", data=serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message="Akses diberikan dan modul berhasil ditambahkan ke akun Anda", data=serializer.data, status=status.HTTP_200_OK, request=request)
 
     def get(self, request, serial_id):
         modul = get_object_or_404(Modul, serial_id=serial_id)
         if modul.user.filter(id=request.user.id).exists():
             serializer = ModulSerializers(modul)
-            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
-        return CustomResponse(message="Silahkan klaim modul terlebih dahulu.", status=status.HTTP_401_UNAUTHORIZED)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, request=request)
+        return CustomResponse(message="Silahkan klaim modul terlebih dahulu.", status=status.HTTP_401_UNAUTHORIZED, request=request)
 
     def patch(self, request, serial_id):
         modul = get_object_or_404(Modul, serial_id=serial_id)
@@ -114,26 +114,26 @@ class ModulUserView(APIView):
             serializer = ModulSerializers(modul, data= request.data, partial=True, context={'request': request})
             if serializer.is_valid():
                 serializer.save()
-                return CustomResponse(success=True, message="Device diperbarui", data=serializer.data, status=status.HTTP_200_OK)
-            return CustomResponse(success=True, message="User sudah terhubung dengan modul ini", data=None, status=status.HTTP_200_OK)
+                return CustomResponse(success=True, message="Device diperbarui", data=serializer.data, status=status.HTTP_200_OK, request=request)
+            return CustomResponse(success=True, message="User sudah terhubung dengan modul ini", data=None, status=status.HTTP_200_OK, request=request)
 
         password = request.data.get("password")
         if not password:
-            return CustomResponse(success=False, message="password diperlukan untuk klaim modul", errors={"password": ["Field required"]}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=False, message="password diperlukan untuk klaim modul", status=status.HTTP_400_BAD_REQUEST, request=request)
 
         if password != modul.password:
-            return CustomResponse(success=False, message="password salah", errors={"password": ["Invalid password"]}, status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(success=False, message="password salah", status=status.HTTP_403_FORBIDDEN, request=request)
 
         modul.user.add(request.user)
-        return CustomResponse(success=True, message="User berhasil ditambahkan ke modul", data={"modul_id": modul.id, "user_id": request.user.id}, status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message="User berhasil ditambahkan ke modul", data={"modul_id": modul.id, "user_id": request.user.id}, status=status.HTTP_200_OK, request=request)
 
     def delete(self, request, serial_id):
         modul = get_object_or_404(Modul, serial_id=serial_id)
         if not modul.user.filter(id=request.user.id).exists():
-            return CustomResponse(success=False, message="User tidak terhubung dengan modul ini", errors={"user": ["Not assigned"]}, status=status.HTTP_404_NOT_FOUND)
+            return CustomResponse(success=False, message="User tidak terhubung dengan modul ini", status=status.HTTP_404_NOT_FOUND, request=request)
 
         modul.user.remove(request.user)
-        return CustomResponse(success=True, message="User berhasil dihapus dari modul", data={"modul_id": modul.id, "user_id": request.user.id}, status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message="User berhasil dihapus dari modul", data={"modul_id": modul.id, "user_id": request.user.id}, status=status.HTTP_200_OK, request=request)
 
 class ModulListUserView(APIView):
     """
@@ -148,7 +148,7 @@ class ModulListUserView(APIView):
     def get(self, request):
         queryset = Modul.objects.filter(user=request.user).order_by("name")
         serializer = ModulSerializers(queryset, many=True)
-        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, )
+        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, request=request)
 
 class FeatureListView(APIView):
     """
@@ -165,14 +165,14 @@ class FeatureListView(APIView):
     def get(self, request):
         queryset = Feature.objects.all().order_by("name")
         serializers = FeatureSerializers(queryset, many=True)
-        return CustomResponse(success=True, message="Success", data=serializers.data, status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message="Success", data=serializers.data, status=status.HTTP_200_OK, request=request)
 
     def post(self, request):
         serializer = FeatureSerializers(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED)
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED, request=request)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
 
 class ModulePinView(APIView):
@@ -196,34 +196,34 @@ class ModulePinView(APIView):
         serializer = ModulePinSerializers(data=request.data, context={'request': request, 'module': module})
         if serializer.is_valid():
             serializer.save(module=module)
-            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED)
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_201_CREATED, request=request)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
     def get(self, request, serial_id, pin=None):
         if pin:
             pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
             if not pin.module.user.filter(id=request.user.id).exists():
-                return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN)
+                return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN, request=request)
             serializer = ModulePinSerializers(pin)
         else:
             pins = ModulePin.objects.filter(module__serial_id = serial_id, module__user = request.user)
             serializer = ModulePinSerializers(pins, many=True)
-        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, request=request)
 
     def patch(self, request,serial_id, pin):
         pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
         if not pin.module.user.filter(id=request.user.id).exists():
-            return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(success=False, message="Anda bukan pemilik pin modul ini", status=status.HTTP_403_FORBIDDEN, request=request)
         serializer = ModulePinSerializers(pin, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil diperbarui", data=serializer.data, status=status.HTTP_200_OK)
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil diperbarui", data=serializer.data, status=status.HTTP_200_OK, request=request)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
     def delete(self, request, serial_id, pin):
         pin = get_object_or_404(ModulePin,module__serial_id=serial_id, pin=pin)
         pin.delete()
-        return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil dihapus", data=None, status=status.HTTP_204_NO_CONTENT)
+        return CustomResponse(success=True, message=f"PIN {pin.pin} Modul {serial_id} berhasil dihapus", data=None, status=status.HTTP_204_NO_CONTENT, request=request)
     
 class ListModuleGroupView(APIView):
     """
@@ -245,7 +245,7 @@ class ListModuleGroupView(APIView):
         """Mengambil list group."""
         group = self.get_object(serial_id, request.user)
         serializer = GroupScheduleSerializer(group, many=True)
-        return CustomResponse(data = serializer.data)
+        return CustomResponse(data = serializer.data, request=request)
 
 class FeatureDetailView(APIView):
     """
@@ -266,20 +266,20 @@ class FeatureDetailView(APIView):
 
     def get(self, request, id):
         serializer = FeatureSerializers(data=get_object_or_404(Feature, id=id))
-        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, request=request)
 
     def patch(self, request, id):
         feature = get_object_or_404(Feature, id=id)
         serializer = FeatureSerializers(feature, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return CustomResponse(success=True, message=f"Feature dengan id {id} berhasil diperbarui", data=serializer.data, status=status.HTTP_200_OK)
-        return CustomResponse(success=False, message="Validation failed", errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(success=True, message=f"Feature dengan id {id} berhasil diperbarui", data=serializer.data, status=status.HTTP_200_OK, request=request)
+        return CustomResponse(success=False, message=serializer.errors, status=status.HTTP_400_BAD_REQUEST, request=request)
 
     def delete(self, request, id):
         feature = get_object_or_404(Feature, id=id)
         feature.delete()
-        return CustomResponse(success=True, message=f"Feature dengan id {id} berhasil dihapus", data=None, status=status.HTTP_204_NO_CONTENT)
+        return CustomResponse(success=True, message=f"Feature dengan id {id} berhasil dihapus", data=None, status=status.HTTP_204_NO_CONTENT, request=request)
 
 class ModulQRCodeView(APIView):
     """
@@ -353,7 +353,7 @@ class LogsListAllAPIView(APIView):
             .distinct()
             )
         serializer = ModuleLogSerializer(logs, many=True)
-        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK, request=request)
 
 class LogsListAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -363,10 +363,10 @@ class LogsListAPIView(APIView):
         is_member = modul.user.filter(pk=request.user.pk).exists()
 
         if not is_member:
-            return CustomResponse(message="Anda tidak memiliki izin untuk melihat log modul ini.", status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(message="Anda tidak memiliki izin untuk melihat log modul ini.", status=status.HTTP_403_FORBIDDEN, request=request)
         logs = ModuleLog.objects.filter(module = modul)
         serializer = ModuleLogSerializer(logs, many=True)
-        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK)
+        return CustomResponse(data = serializer.data, status=status.HTTP_200_OK, request=request)
     
 class LogsDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -379,6 +379,6 @@ class LogsDeleteAPIView(APIView):
         is_member = log_object.module.user.filter(pk=request.user.pk).exists()
 
         if not is_member:
-            return CustomResponse(message="Anda tidak memiliki izin untuk menghapus log ini.", status=status.HTTP_403_FORBIDDEN)
+            return CustomResponse(message="Anda tidak memiliki izin untuk menghapus log ini.", status=status.HTTP_403_FORBIDDEN, request=request)
         log_object.delete()
-        return CustomResponse(message="Log berhasil dihapus.", status=status.HTTP_200_OK)
+        return CustomResponse(message="Log berhasil dihapus.", status=status.HTTP_200_OK, request=request)

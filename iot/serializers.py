@@ -65,6 +65,9 @@ class ModulSerializers(serializers.ModelSerializer):
             instance.user.remove(*users_to_remove)
 
         return super().update(instance, validated_data)
+    
+    def get_created_at(self, obj):
+        return obj.created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 class ModulePinSerializers(serializers.ModelSerializer):
     class Meta:
@@ -131,3 +134,6 @@ class ModuleLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModuleLog
         fields = ['id', 'module', 'schedule', 'name', 'type','data','created_at']
+    
+    def get_created_at(self, obj):
+        return obj.created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
