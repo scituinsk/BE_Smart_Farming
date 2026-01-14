@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import *
+from profil.models import *
+from smartfarming.tasks import task_broadcast_module_notification
+from django.utils import timezone
 
 class UserSerializers(serializers.ModelSerializer):
     class Meta:
@@ -58,11 +61,22 @@ class ModulSerializers(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         request = self.context.get('request')
         new_password = validated_data.get('password', None)
+        title = f"Password {instance.name} diubah!"
+        body = f"User {request.user.email} mengubah password modul IoT"
+        log_data = {
+            "username": request.user.username,
+            "email": request.user.email,
+            "modul": str(instance.serial_id),
+            "timestamp": timezone.now().isoformat().replace("+00:00", "Z"),
+        }
 
         # bersihkan user lain jika password diubah
         if new_password and instance.password != new_password:
             users_to_remove = instance.user.exclude(id=request.user.id)
             instance.user.remove(*users_to_remove)
+            task_broadcast_module_notification.delay(modul_id=instance.id, title=title, body=body, data=log_data)
+            users = instance.user.all()
+            Notification.bulk_create_for_users(users=users, notif_type=NotificationType.MODULE, title=title, body=body, data=log_data)
 
         return super().update(instance, validated_data)
     

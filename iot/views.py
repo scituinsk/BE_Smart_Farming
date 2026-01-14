@@ -10,6 +10,9 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from smartfarming.utils.permissions import *
+from smartfarming.tasks import task_broadcast_module_notification
+from profil.models import NotificationType, Notification
+from django.utils import timezone
 from .models import *
 from .serializers import *
 from schedule.models import GroupSchedule
@@ -97,6 +100,20 @@ class ModulUserView(APIView):
             return CustomResponse(success=False, message="password salah", status=status.HTTP_403_FORBIDDEN, request=request)
 
         modul.user.add(request.user)
+
+        # Push notifications and logs 
+        log_data = {
+            "username": request.user.username,
+            "email": request.user.email,
+            "modul": modul.serial_id,
+            "timestamp": timezone.now().isoformat().replace("+00:00", "Z"),
+        }
+        title = "User baru melakukan klaim modul IoT"
+        body = f"{request.user.username} telah ditambahkan."
+        task_broadcast_module_notification.delay(modul_id=self.modul.id, title=title, body=body, data=log_data)
+        users = self.modul.user.all()
+        Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=title, body=body, data=log_data)
+
         serializer = ModulSerializers(modul)
         return CustomResponse(success=True, message="Akses diberikan dan modul berhasil ditambahkan ke akun Anda", data=serializer.data, status=status.HTTP_200_OK, request=request)
 
@@ -109,6 +126,14 @@ class ModulUserView(APIView):
 
     def patch(self, request, serial_id):
         modul = get_object_or_404(Modul, serial_id=serial_id)
+        title = "User baru melakukan klaim modul IoT"
+        body = f"{request.user.username} telah ditambahkan."
+        log_data = {
+            "username": request.user.username,
+            "email": request.user.email,
+            "modul": str(modul.serial_id),
+            "timestamp": timezone.now().isoformat().replace("+00:00", "Z"),
+        }
 
         if modul.user.filter(id=request.user.id).exists():
             serializer = ModulSerializers(modul, data= request.data, partial=True, context={'request': request})
@@ -125,6 +150,12 @@ class ModulUserView(APIView):
             return CustomResponse(success=False, message="password salah", status=status.HTTP_403_FORBIDDEN, request=request)
 
         modul.user.add(request.user)
+
+        # Push notifications and logs 
+        task_broadcast_module_notification.delay(modul_id=modul.id, title=title, body=body, data=log_data)
+        users = modul.user.all()
+        Notification.bulk_create_for_users(users=users, notif_type=NotificationType.MODULE, title=title, body=body, data=log_data)
+
         return CustomResponse(success=True, message="User berhasil ditambahkan ke modul", data={"modul_id": modul.id, "user_id": request.user.id}, status=status.HTTP_200_OK, request=request)
 
     def delete(self, request, serial_id):

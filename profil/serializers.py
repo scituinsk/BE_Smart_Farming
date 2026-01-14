@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile
+from profil.models import *
 from schedule.models import Alarm
 
 
@@ -31,3 +31,8 @@ class ProfileSerializers(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         
         return instance
+    
+class NotificationSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = "__all__"

@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from iot.models import *
 from schedule.models import GroupSchedule
 from smartfarming.tasks import task_broadcast_module_notification
+from profil.models import NotificationType, Notification
 import asyncio
 import logging
 
@@ -232,6 +233,8 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                 update_log.data = log_data 
                 update_log.save()
                 task_broadcast_module_notification.delay(modul_id=self.modul.id, title=f"Penjadwalan {schedule_name.name} dipicu!", body="IoT sedang menjalankan tugas", data=log_data)
+                users = self.modul.user.all()
+                Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=f"Penjadwalan {schedule_name.name} dipicu!", body="IoT sedang menjalankan tugas", data=log_data)
                 logger.info(
                     f"DB> Log diperbarui | module={self.modul.serial_id} | type={update_log.type}"
                 )

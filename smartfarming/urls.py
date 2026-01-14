@@ -42,7 +42,7 @@ urlpatterns = [
     path('api/reset-password', ResetPasswordView.as_view(), name='reset_password'),
 
     path('api/iot/', include('iot.urls')),
-    path('api/profile/', include('profil.urls')),
+    path('api/user/', include('profil.urls')),
     path('api/schedule/', include('schedule.urls')),
     path('api/', include(fcm_router.urls)),
 
