@@ -40,7 +40,7 @@ GET_SENSOR
 {
     "device":"<auth_id>",
     "device_logs":{
-        "id":<log_id>, // Log id Wajib
+        "id":<log_id>, // Log id = shcedule yang dikirim server (Wajib)
         "data": {
             "pins": [
                 {"pin": 6, "start": "10:00", "end": "10:10"},

@@ -16,7 +16,7 @@ def trigger_alarm_task(alarm_id):
     """
     try:
         alarm = Alarm.objects.get(pk=alarm_id)
-        device_logs = ModuleLog.objects.create(module = alarm.group.modul, schedule= alarm.group, name = alarm.group.name, type="schedule")
+        device_logs = ModuleLog.objects.create(module = alarm.group.modul, schedule= alarm.group, type="schedule", name = alarm.group.name, alarm_at=alarm.time)
         module_pin = ModulePin.objects.filter(group=alarm.group)
         pin_list = list(module_pin.values_list('pin', flat=True))
 

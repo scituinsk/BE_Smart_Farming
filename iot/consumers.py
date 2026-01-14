@@ -3,7 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from iot.models import *
 from schedule.models import GroupSchedule
-from smartfarming.task import task_broadcast_module_notification
+from smartfarming.tasks import task_broadcast_module_notification
 import asyncio
 import logging
 
@@ -209,7 +209,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
             log_data = payload.get("data", {})
 
             # jika ada id maka dia update log yang sudah ada
-            if log_id:
+            if type(log_id) == type(123):
                 pins = log_data.get("pins", [])
                 modul_pin = ModulePin.objects.filter(module=self.modul)
                 
@@ -226,27 +226,28 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                         p["pin"] = pin_map[original_pin]
 
                 update_log = ModuleLog.objects.get(id=log_id)
-                schedule_name = GroupSchedule.objects.get(id= update_log.schedule)
+                schedule_name = GroupSchedule.objects.get(id= update_log.schedule.id)
                 
                 # Simpan 'log_data' yang strukturnya sudah benar & terupdate
                 update_log.data = log_data 
                 update_log.save()
                 task_broadcast_module_notification.delay(modul_id=self.modul.id, title=f"Penjadwalan {schedule_name.name} dipicu!", body="IoT sedang menjalankan tugas", data=log_data)
-                return
-                
-            if name == None:
-                name = self.modul.name
+                logger.info(
+                    f"DB> Log diperbarui | module={self.modul.serial_id} | type={update_log.type}"
+                )
+            else:                
+                if name == None:
+                    name = self.modul.name
+                ModuleLog.objects.create(
+                    module=self.modul,
+                    type=log_type,
+                    name=name,
+                    data=log_data # Simpan data dict mentah
+                )
 
-            ModuleLog.objects.create(
-                module=self.modul,
-                type=log_type,
-                name=name,
-                data=log_data # Simpan data dict mentah
-            )
-
-            logger.info(
-                f"DB> Log dibuat | module={self.modul.serial_id} | type={log_type}"
-            )
+                logger.info(
+                    f"DB> Log dibuat | module={self.modul.serial_id} | type={log_type}"
+                )
 
         except Exception as e:
             logger.exception(f"Gagal membuat ModuleLog: {e}")

@@ -133,7 +133,7 @@ class ModulePinSerializers(serializers.ModelSerializer):
 class ModuleLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModuleLog
-        fields = ['id', 'module', 'schedule', 'name', 'type','data','created_at']
+        fields = ['id', 'module', 'schedule', 'type', 'name', 'alarm_at', 'data', 'updated_at', 'created_at']
     
     def get_created_at(self, obj):
         return obj.created_at.strftime("%Y-%m-%dT%H:%M:%SZ")

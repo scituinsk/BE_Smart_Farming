@@ -69,7 +69,9 @@ class ModuleLog(models.Model):
     schedule = models.ForeignKey("schedule.GroupSchedule", blank=True, null=True, on_delete=models.SET_NULL, related_name='log_group') # null = bukan dari schedule
     type = models.CharField(max_length=50, blank=True, null=True, default="modul") # dari schedule atau modul? if schedule: type = schedule
     name = models.CharField(max_length=50, blank=True, null=True) # if schedule = nama grup penjadwalan
+    alarm_at = models.TimeField(blank=True, null=True)
     data = models.JSONField(default=dict) # data bebas dalam json
+    updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
