@@ -105,14 +105,14 @@ class ModulUserView(APIView):
         log_data = {
             "username": request.user.username,
             "email": request.user.email,
-            "modul": modul.serial_id,
+            "modul": str(modul.serial_id),
             "timestamp": timezone.now().isoformat().replace("+00:00", "Z"),
         }
         title = "User baru melakukan klaim modul IoT"
         body = f"{request.user.username} telah ditambahkan."
-        task_broadcast_module_notification.delay(modul_id=self.modul.id, title=title, body=body, data=log_data)
-        users = self.modul.user.all()
-        Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=title, body=body, data=log_data)
+        task_broadcast_module_notification.delay(modul_id=modul.id, title=title, body=body, data=log_data)
+        users = modul.user.all()
+        Notification.bulk_create_for_users(users=users, notif_type=NotificationType.MODULE, title=title, body=body, data=log_data)
 
         serializer = ModulSerializers(modul)
         return CustomResponse(success=True, message="Akses diberikan dan modul berhasil ditambahkan ke akun Anda", data=serializer.data, status=status.HTTP_200_OK, request=request)
