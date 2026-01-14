@@ -3,66 +3,11 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from iot.models import *
 from schedule.models import GroupSchedule
+from smartfarming.task import task_broadcast_module_notification
 import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
-
-class DeviceConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        self.device_id = self.scope['url_route']['kwargs']['device_id']
-        self.group_name = f'device_{self.device_id}'
-
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
-        await self.accept()
-        await self.send(text_data=json.dumps({"status": "Connected to Websocket"}))
-        logger.info(f"WS> Client {self.channel_name} connected to group '{self.group_name}'")
-
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
-        logger.warning(f"WS> Client {self.channel_name} disconnected from group '{self.group_name}'")
-
-    async def receive(self, text_data):
-        """
-        Menerima pesan (baik perintah string dari web atau status JSON dari ESP32)
-        dan menyiarkannya ke semua anggota LAIN dalam grup.
-        Server tidak lagi menerjemahkan format, hanya meneruskan pesan apa adanya.
-        """
-        logger.info(f"WS> Received from {self.channel_name}, forwarding message: {text_data}")
-
-        # - Jika dari web, pesannya "PIN:CMD:DURASI_..."
-        # - Jika dari ESP32, pesannya '{"status": {"2": "ON", ...}}'
-        message_to_broadcast = text_data
-
-        # Kirim pesan ke grup channel
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'broadcast.message',
-                'message': message_to_broadcast,
-                'sender_channel_name': self.channel_name
-            }
-        )
-
-    async def broadcast_message(self, event):
-        """
-        Menerima pesan dari grup dan meneruskannya ke WebSocket client.
-        Fungsi ini memastikan client tidak menerima pesannya sendiri kembali.
-        """
-        message = event['message']
-        sender_channel_name = event['sender_channel_name']
-
-        # Hanya kirim pesan jika penerima BUKAN pengirim aslinya
-        if self.channel_name != sender_channel_name:
-            await self.send(text_data=message)
-            logger.info(f"WS> Broadcasting to {self.channel_name}: {message}")
-
 
 class DeviceAuthConsumer(AsyncWebsocketConsumer):
     """ KETENTUAN PENGIRIMAN PESAN KE AUTH WEBSOCKET
@@ -258,54 +203,42 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
     def create_module_log(self, payload: dict):
         try:
             # Ekstraksi Value dari payload
-            schedule_id = payload.get("schedule")
+            log_id = payload.get("id")
             log_type = payload.get("type", "modul")
             name = payload.get("name")
-            
-            log_data = payload.get("data", {}) 
+            log_data = payload.get("data", {})
 
-            # Handle Schedule (Otomatisasi Nama)
-            schedule_obj = None
-            if schedule_id:
-                schedule_obj = GroupSchedule.objects.filter(id=schedule_id).first()
-                if schedule_obj and not name:
-                    name = schedule_obj.name
+            # jika ada id maka dia update log yang sudah ada
+            if log_id:
+                pins = log_data.get("pins", [])
+                modul_pin = ModulePin.objects.filter(module=self.modul)
+                
+                # Mapping: {6: "relay 1", 7: "relay 2"}
+                pin_map = {mp.pin: mp.name for mp in modul_pin}
+                
+                # Update nilai pin di dalam list pins
+                # Karena 'pins' adalah referensi ke dalam 'log_data', 
+                # mengubah 'p' berarti mengubah isi 'log_data' juga.
+                for p in pins:
+                    original_pin = p.get("pin")
+                    # Ganti angka dengan nama jika ada di map, jika tidak biarkan angkanya
+                    if original_pin in pin_map:
+                        p["pin"] = pin_map[original_pin]
+
+                update_log = ModuleLog.objects.get(id=log_id)
+                schedule_name = GroupSchedule.objects.get(id= update_log.schedule)
+                
+                # Simpan 'log_data' yang strukturnya sudah benar & terupdate
+                update_log.data = log_data 
+                update_log.save()
+                task_broadcast_module_notification.delay(modul_id=self.modul.id, title=f"Penjadwalan {schedule_name.name} dipicu!", body="IoT sedang menjalankan tugas", data=log_data)
+                return
+                
             if name == None:
                 name = self.modul.name
 
-            # Deteksi dan Update "ModulePin"
-            # Struktur baru: "data": {"pin": {"on": [...], "off": [...]}}
-            # Karena log_data adalah dictionary, kita tidak perlu looping.
-            
-            if isinstance(log_data, dict):
-                pin_config = log_data.get("pin")
-
-                if pin_config:
-                    # Ambil list pin yang harus ON dan OFF
-                    on_list = pin_config.get("on", [])
-                    off_list = pin_config.get("off", [])
-
-                    # --- Update Status ON ---
-                    if on_list:
-                        pins_to_on = ModulePin.objects.filter(
-                            module=self.modul, 
-                            pin__in=on_list
-                        )
-                        for p in pins_to_on:
-                            p.set_on()
-
-                    # --- Update Status OFF ---
-                    if off_list:
-                        pins_to_off = ModulePin.objects.filter(
-                            module=self.modul, 
-                            pin__in=off_list
-                        )
-                        for p in pins_to_off:
-                            p.set_off()
-
             ModuleLog.objects.create(
                 module=self.modul,
-                schedule=schedule_obj,
                 type=log_type,
                 name=name,
                 data=log_data # Simpan data dict mentah

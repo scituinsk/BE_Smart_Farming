@@ -8,6 +8,7 @@ from django.utils.crypto import get_random_string
 from django.contrib.auth.models import User
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q
+from fcm_django.models import FCMDevice
 from smartfarming.utils.exc_handler import CustomResponse
 from .serializers import *
 
@@ -59,6 +60,12 @@ class LogoutView(APIView):
 
         if not refresh_token:
             return CustomResponse(success=False, message = "Refresh token is required", status=status.HTTP_400_BAD_REQUEST, request=request)
+
+        registration_id = request.data.get('fcm_token')
+        FCMDevice.objects.filter(
+            user=request.user, 
+            registration_id=registration_id
+        ).update(active=False)
 
         try:
             token = RefreshToken(refresh_token)

@@ -6,7 +6,6 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from schedule.models import Alarm, GroupSchedule
 from iot.models import ModulePin, ModuleLog
-from smartfarming.task import task_broadcast_module_notification
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +16,7 @@ def trigger_alarm_task(alarm_id):
     """
     try:
         alarm = Alarm.objects.get(pk=alarm_id)
+        device_logs = ModuleLog.objects.create(module = alarm.group.modul, schedule= alarm.group, name = alarm.group.name, type="schedule")
         module_pin = ModulePin.objects.filter(group=alarm.group)
         pin_list = list(module_pin.values_list('pin', flat=True))
 
@@ -37,21 +37,12 @@ def trigger_alarm_task(alarm_id):
     check = 0
     pins = pins_string
     duration = alarm.duration
-    schedule_id = alarm.id
+    schedule_id = device_logs.id
     sequential = alarm.group.sequential
 
     message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}\nsequential={sequential}"
     
     logging.info(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
-    
-    log_data = {"message": "Penjadwalan telah dimulai"}
-    ModuleLog.objects.create(
-        module=alarm.group.modul,
-        schedule=GroupSchedule.objects.get(id=alarm.group.id),
-        type="schedule",
-        name=alarm.group.name,
-        data=log_data
-    )
 
     async_to_sync(channel_layer.group_send)(
         group_name,
@@ -61,7 +52,6 @@ def trigger_alarm_task(alarm_id):
             'sender_channel_name': 'celery_worker'
         }
     )
-    task_broadcast_module_notification.delay(modul_id=alarm.group.modul.id, title=f"Alarm {alarm.label} group {alarm.group.name} dipicu!", body=message_payload, data=message_payload)
 
     if not alarm.is_repeating:
         alarm.is_active = False

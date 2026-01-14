@@ -14,11 +14,9 @@ Mendapatkan data dari sensor
 check=1
 ```
 
-### 2. Perintah sreaming data
+### 2. Perintah untuk meminta data sensor
 ```markdown
-STREAMING_ON 
-
-STREAMING_OFF
+GET_SENSOR
 ```
 
 ## IoT ke server
@@ -27,30 +25,28 @@ STREAMING_OFF
 {
     "device":"<auth_id>",
     "device_logs":{
-        "schedule":"<id_schedule>", // mengembalikan id schedule yang dikirim server untuk inisiasi bawa penjadwalan berhasil (opsional)
         "type": "value", // untuk menentukan logo di frontend (default = modul)
         "name": "value", // untuk menentukan judul di frontend (diisi otomatis)
         "data": {
             // isi dengan format json
-            "message": "Penjadwalan telah selesai" // message if schedule != null
+            "message": "Modul IoT Kembali On"
         }
     }
 }
 ```
 
-### 2. Mengirim Perubahan Pin Via Log Device ke server (perintah-feedback)
+### 2. Mengirim Perubahan Pin Via Log Device ke server (schedule)
 ```json
 {
     "device":"<auth_id>",
     "device_logs":{
-        "schedule":<id_schedule>, // mengembalikan id schedule yang dikirim server untuk inisiasi bawa penjadwalan berhasil (opsional)
-        "type": "value", // untuk menentukan logo di frontend (default = modul)
-        "name": "value", // untuk menentukan judul di frontend (diisi otomatis)
+        "id":<log_id>, // Log id Wajib
         "data": {
-            "pin": {
-                "on": [23, 2],
-                "off": [6, 12]
-            }
+            "pins": [
+                {"pin": 6, "start": "10:00", "end": "10:10"},
+                {"pin": 7, "start": "10:00", "end": "10:10"},
+                {"pin": 8, "start": "10:10", "end": "10:20"}
+            ]
         }
     }
 }
