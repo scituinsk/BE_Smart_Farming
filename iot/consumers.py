@@ -109,6 +109,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                 # Mapping: Kunci JSON -> Fungsi Handler
                 # Tips: Jika nambah sensor baru, cukup tambah di sini.
                 sensor_handlers = {
+                    'schedule_data': self.update_pin_status,
                     'temperature_data': self.update_temperature_data,
                     'humidity_data': self.update_humidity_data,
                     'battery_data': self.update_battery_data,
@@ -254,6 +255,28 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
 
         except Exception as e:
             logger.exception(f"Gagal membuat ModuleLog: {e}")
+
+    @database_sync_to_async
+    def update_pin_status(self, message):
+        """
+        Fungsi untuk membuat objek ScheduleLog di database secara asynchronous.
+        """
+        try:
+            pins = next((item.get('pins') for item in message if isinstance(item, dict) and 'pins' in item), None )
+            if not pins :
+                return
+            for pin in pins:
+                for key, value in pin.items():
+                    obj = ModulePin.objects.get(module=self.modul, pin=key)
+                    obj.status = value == "1"
+                    obj.save(update_fields=["status"])
+            logger.info(f"DB> status pin berhasil diperbarui di modul {self.modul.serial_id}.")
+
+        except ModulePin.DoesNotExist:
+            logger.exception("Module Pin tidak ditemukan")
+        except Exception as e:
+            logger.exception(f"DB> GAGAL membuat log: {e}")
+
 
     @database_sync_to_async
     def update_temperature_data(self, message):
