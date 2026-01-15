@@ -11,6 +11,9 @@ from django.db.models import Q
 from fcm_django.models import FCMDevice
 from smartfarming.utils.exc_handler import CustomResponse
 from .serializers import *
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RegistrationView(APIView):
     """ Registrasi user """
@@ -27,6 +30,7 @@ class LoginView(APIView):
     def post(self, request):
         identifier = request.data.get('username') 
         password = request.data.get('password')
+        registration_id = request.headers.get('X-FCM-TOKEN')
 
         if not identifier or not password:
             return CustomResponse(success=False, message = 'Identifier dan password wajib diisi.', status=status.HTTP_400_BAD_REQUEST, request=request)
@@ -45,6 +49,18 @@ class LoginView(APIView):
             user_data = user_serializer.data
             user_data['role'] = role
 
+            if registration_id:
+                try:
+                    FCMDevice.objects.update_or_create(
+                        registration_id=registration_id,
+                        defaults={
+                            "user": user_authenticated,
+                            "active": True,
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"FCM token bermasalah untuk user {user_authenticated.id}: {e}")
+
             return CustomResponse(data={
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
@@ -57,19 +73,21 @@ class LogoutView(APIView):
 
     def post(self, request):
         refresh_token = request.data.get("refresh")
+        registration_id = request.headers.get('X-FCM-TOKEN')
 
         if not refresh_token:
             return CustomResponse(success=False, message = "Refresh token is required", status=status.HTTP_400_BAD_REQUEST, request=request)
 
-        registration_id = request.data.get('fcm_token')
-        FCMDevice.objects.filter(
-            user=request.user, 
-            registration_id=registration_id
-        ).update(active=False)
-
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()  # Memasukkan token ke blacklist
+
+            if registration_id:
+                FCMDevice.objects.filter(
+                    user=request.user, 
+                    registration_id=registration_id
+                ).update(active=False)
+                
             return CustomResponse(message= "Logout successful", status=status.HTTP_205_RESET_CONTENT, request=request)
         except TokenError:  # Menangani token yang tidak valid atau sudah kadaluarsa
             return CustomResponse(success=False, message = "Invalid or expired refresh token", status=status.HTTP_400_BAD_REQUEST, request=request)
