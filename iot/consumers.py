@@ -214,6 +214,7 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
             if type(log_id) == type(123):
                 pins = log_data.get("pins", [])
                 modul_pin = ModulePin.objects.filter(module=self.modul)
+                message = log_data.get("message", "IoT sedang menjalankan tugas")
                 
                 # Mapping: {6: "relay 1", 7: "relay 2"}
                 pin_map = {mp.pin: mp.name for mp in modul_pin}
@@ -233,9 +234,9 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                 # Simpan 'log_data' yang strukturnya sudah benar & terupdate
                 update_log.data = log_data 
                 update_log.save()
-                task_broadcast_module_notification.delay(modul_id=self.modul.id, title=f"Penjadwalan {schedule_name.name} dipicu!", body="IoT sedang menjalankan tugas", data=log_data)
                 users = self.modul.user.all()
-                Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=f"Penjadwalan {schedule_name.name} dipicu!", body="IoT sedang menjalankan tugas", data=log_data)
+                Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=f"Penjadwalan {schedule_name.name} dipicu!", body=message, data=log_data)
+                task_broadcast_module_notification.delay(modul_id=self.modul.id, title=f"Penjadwalan {schedule_name.name} dipicu!", body=message, data=log_data)
                 logger.info(
                     f"DB> Log diperbarui | module={self.modul.serial_id} | type={update_log.type}"
                 )
