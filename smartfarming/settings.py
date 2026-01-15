@@ -138,7 +138,7 @@ CSRF_TRUSTED_ORIGINS = [
     for host in ALLOWED_HOSTS if host
 ]
 
-FORCE_SCRIPT_NAME = '/api/smartfarming'
+# FORCE_SCRIPT_NAME = '/api/smartfarming'
 # STATIC_URL = '/static/smartfarming/'
 
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
