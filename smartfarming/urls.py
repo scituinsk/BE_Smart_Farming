@@ -34,7 +34,7 @@ fcm_router.register(r'devices', FCMDeviceAuthorizedViewSet)
 
 urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html')),
-    path('admin/', admin.site.urls),
+    path('api/admin/', admin.site.urls),
     path('api/login', LoginView.as_view(), name='login'),
     path('api/logout', LogoutView.as_view(), name='logout'),
     path('api/register', RegistrationView.as_view(), name='register'),
