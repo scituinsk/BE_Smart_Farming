@@ -73,10 +73,10 @@ class ModulSerializers(serializers.ModelSerializer):
         # bersihkan user lain jika password diubah
         if new_password and instance.password != new_password:
             users_to_remove = instance.user.exclude(id=request.user.id)
-            instance.user.remove(*users_to_remove)
             task_broadcast_module_notification.delay(modul_id=instance.id, title=title, body=body, data=log_data)
             users = instance.user.all()
             Notification.bulk_create_for_users(users=users, notif_type=NotificationType.MODULE, title=title, body=body, data=log_data)
+            instance.user.remove(*users_to_remove)
 
         return super().update(instance, validated_data)
     

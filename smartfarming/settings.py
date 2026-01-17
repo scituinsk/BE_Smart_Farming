@@ -138,9 +138,6 @@ CSRF_TRUSTED_ORIGINS = [
     for host in ALLOWED_HOSTS if host
 ]
 
-# FORCE_SCRIPT_NAME = '/api/smartfarming'
-# STATIC_URL = '/static/smartfarming/'
-
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
 SECURE_BROWSER_XSS_FILTER = config('SECURE_BROWSER_XSS_FILTER', default=True, cast=bool)
 SECURE_CONTENT_TYPE_NOSNIFF = config('SECURE_CONTENT_TYPE_NOSNIFF', default=True, cast=bool)

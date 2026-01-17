@@ -235,8 +235,9 @@ class DeviceAuthConsumer(AsyncWebsocketConsumer):
                 update_log.data = log_data 
                 update_log.save()
                 users = self.modul.user.all()
-                Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=f"Penjadwalan {schedule_name.name} dipicu!", body=message, data=log_data)
-                task_broadcast_module_notification.delay(modul_id=self.modul.id, title=f"Penjadwalan {schedule_name.name} dipicu!", body=message, data=log_data)
+                title = f"Informasi Penjadwalan {schedule_name.name}"
+                Notification.bulk_create_for_users(users=users, notif_type=NotificationType.SCHEDULE, title=title, body=message, data=log_data)
+                task_broadcast_module_notification.delay(modul_id=self.modul.id, title=title, body=message, data=log_data)
                 logger.info(
                     f"DB> Log diperbarui | module={self.modul.serial_id} | type={update_log.type}"
                 )
