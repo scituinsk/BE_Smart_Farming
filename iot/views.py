@@ -110,7 +110,8 @@ class ModulUserView(APIView):
         }
         title = "User baru melakukan klaim modul IoT"
         body = f"{request.user.username} telah ditambahkan."
-        task_broadcast_module_notification.delay(modul_id=modul.id, title=title, body=body, data=log_data)
+        user_ids = list(modul.user.values_list('id', flat=True))
+        task_broadcast_module_notification.delay(user_ids=user_ids , modul_id=modul.id, title=title, body=body, data=log_data)
         users = modul.user.all()
         Notification.bulk_create_for_users(users=users, notif_type=NotificationType.MODULE, title=title, body=body, data=log_data)
 
@@ -122,7 +123,7 @@ class ModulUserView(APIView):
         if modul.user.filter(id=request.user.id).exists():
             serializer = ModulSerializers(modul)
             return CustomResponse(success=True, message="Success", data=serializer.data, status=status.HTTP_200_OK, request=request)
-        return CustomResponse(message="Silahkan klaim modul terlebih dahulu.", status=status.HTTP_401_UNAUTHORIZED, request=request)
+        return CustomResponse(message="Silahkan klaim modul terlebih dahulu.", status=status.HTTP_401_UNAUTHORIZED, request=request, data="unauthorized")
 
     def patch(self, request, serial_id):
         modul = get_object_or_404(Modul, serial_id=serial_id)
@@ -150,9 +151,10 @@ class ModulUserView(APIView):
             return CustomResponse(success=False, message="password salah", status=status.HTTP_403_FORBIDDEN, request=request)
 
         modul.user.add(request.user)
+        user_ids = list(modul.user.values_list('id', flat=True))
 
         # Push notifications and logs 
-        task_broadcast_module_notification.delay(modul_id=modul.id, title=title, body=body, data=log_data)
+        task_broadcast_module_notification.delay(user_ids=user_ids ,modul_id=modul.id, title=title, body=body, data=log_data)
         users = modul.user.all()
         Notification.bulk_create_for_users(users=users, notif_type=NotificationType.MODULE, title=title, body=body, data=log_data)
 
