@@ -179,7 +179,7 @@ class ListGroupAlarmAPIView(APIView):
         Memastikan objek ada dan dimiliki oleh pengguna yang benar.
         """
         try:
-            return Alarm.objects.filter(group__id=id, group__modul__user=user)
+            return Alarm.objects.filter(group__id=id, group__modul__user=user).order_by("-is_active", "-updated_at")
         except Alarm.DoesNotExist:
             raise Http404
 

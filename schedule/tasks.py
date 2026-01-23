@@ -37,10 +37,11 @@ def trigger_alarm_task(alarm_id):
     check = 0
     pins = pins_string
     duration = alarm.duration
-    schedule_id = device_logs.id
+    schedule_id = alarm.group
+    log_id = device_logs.id
     sequential = alarm.group.sequential
 
-    message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}\nsequential={sequential}"
+    message_payload = f"check={check}\nrelay={pins}\ntime={duration}\nschedule={schedule_id}\nlog={log_id}\nsequential={sequential}"
     
     logging.info(f"ALARM TASK: Memicu alarm ID {alarm_id} untuk grup '{group_name}'")
 

@@ -7,7 +7,8 @@
 check=0
 relay=1,2,3 (gpio mana) 
 time=6 (detik) 
-schedule=<id_schedule>
+schedule=<schedule_id>
+log=<log_id>
 sequential=2 (pin/sequential)
 
 Mendapatkan data dari sensor
@@ -42,11 +43,14 @@ GET_SENSOR
     "device_logs":{
         "id":<log_id>, // Log id = shcedule yang dikirim server (Wajib)
         "data": {
+            "device":<serial_id>, // didapat dari serial yang ditanam di modul iot
+            "schedule: <schedule_id>, // didapat dari data schedule yang dikirim server
             "pins": [
                 {"pin": 6, "start": "10:00", "end": "10:10"},
                 {"pin": 7, "start": "10:00", "end": "10:10"},
                 {"pin": 8, "start": "10:10", "end": "10:20"}
-            ]
+            ],
+            "message": "bebas yang penting valid < 50 char",
         }
     }
 }

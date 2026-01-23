@@ -30,7 +30,7 @@ class NotificationsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        notif = Notification.objects.filter(user = request.user)
+        notif = Notification.objects.filter(user = request.user).order_by("-created_at")
         serializer = NotificationSerializers(notif, many=True)
         return CustomResponse(success=True, status=status.HTTP_200_OK,message="List Notifications", data=serializer.data, request=request)
     
