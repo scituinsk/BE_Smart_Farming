@@ -43,7 +43,7 @@ GET_SENSOR
     "device_logs":{
         "id":<log_id>, // Log id = shcedule yang dikirim server (Wajib)
         "data": {
-            "device":<serial_id>, // didapat dari serial yang ditanam di modul iot
+            "serial_id":<serial_id>, // didapat dari serial yang ditanam di modul iot
             "schedule: <schedule_id>, // didapat dari data schedule yang dikirim server
             "pins": [
                 {"pin": 6, "start": "10:00", "end": "10:10"},

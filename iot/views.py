@@ -397,7 +397,7 @@ class LogsListAPIView(APIView):
 
         if not is_member:
             return CustomResponse(message="Anda tidak memiliki izin untuk melihat log modul ini.", status=status.HTTP_403_FORBIDDEN, request=request)
-        logs = ModuleLog.objects.filter(module = modul)
+        logs = ModuleLog.objects.filter(module = modul).order_by("-updated_at")
         serializer = ModuleLogSerializer(logs, many=True)
         return CustomResponse(data = serializer.data, status=status.HTTP_200_OK, request=request)
     
