@@ -37,7 +37,7 @@ def trigger_alarm_task(alarm_id):
     check = 0
     pins = pins_string
     duration = alarm.duration
-    schedule_id = alarm.group
+    schedule_id = alarm.group.id
     log_id = device_logs.id
     sequential = alarm.group.sequential
 
