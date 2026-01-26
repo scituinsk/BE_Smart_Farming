@@ -11,14 +11,16 @@ class ResetPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email tidak ditemukan.")
         return value
 class UserSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='id', read_only=True)
     """
     Serializer untuk menampilkan data dasar pengguna.
     """
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = ['user_id', 'username', 'email', 'first_name', 'last_name']
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='id', read_only=True)
     username = serializers.CharField(max_length=30)
     
     email = serializers.CharField(
@@ -35,7 +37,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2', 'first_name', 'last_name']
+        fields = ['user_id', 'username', 'email', 'password1', 'password2', 'first_name', 'last_name']
 
     def validate_username(self, value):
         # 1. Ubah ke format standar (lowercase, tanpa spasi)

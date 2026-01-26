@@ -15,17 +15,17 @@ class UserRoleSerializer(serializers.ModelSerializer):
         return "admin" if obj.is_staff else "user"
 
 class ProfileSerializers(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
     first_name = serializers.CharField(source='user.first_name', required=False)
     last_name = serializers.CharField(source='user.last_name', required=False)
     modul_count = serializers.SerializerMethodField()
-    user = UserRoleSerializer()
 
     class Meta:
         model = UserProfile
         fields = [
-            'username', 'email', 'first_name', 'last_name', 'description', 'image', 'modul_count', 'user'
+            'user_id', 'username', 'email', 'first_name', 'last_name', 'description', 'image', 'modul_count'
         ]
 
     def get_modul_count(self, obj):
