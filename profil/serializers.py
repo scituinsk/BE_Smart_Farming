@@ -2,6 +2,17 @@ from rest_framework import serializers
 from profil.models import *
 from schedule.models import Alarm
 
+class UserRoleSerializer(serializers.ModelSerializer):
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role']
+        read_only_fields = ['id', 'username', 'email'] 
+
+    def get_role(self, obj):
+        # Jika is_staff True -> "admin", selain itu "user"
+        return "admin" if obj.is_staff else "user"
 
 class ProfileSerializers(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
@@ -9,11 +20,12 @@ class ProfileSerializers(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name', required=False)
     last_name = serializers.CharField(source='user.last_name', required=False)
     modul_count = serializers.SerializerMethodField()
+    user = UserRoleSerializer()
 
     class Meta:
         model = UserProfile
         fields = [
-            'username', 'email', 'first_name', 'last_name', 'description', 'image', 'modul_count'
+            'username', 'email', 'first_name', 'last_name', 'description', 'image', 'modul_count', 'user'
         ]
 
     def get_modul_count(self, obj):
