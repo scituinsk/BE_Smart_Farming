@@ -129,3 +129,14 @@ class AuthView(APIView):
             }
             return CustomResponse(data = context, status=status.HTTP_200_OK, request=request)
         return CustomResponse(success=False, message = 'Not authenticated', status=status.HTTP_401_UNAUTHORIZED, request=request)
+    
+class ContactView(APIView):
+    """ Get contact index pertama yang berstatus aktif"""
+    def get(self, request):
+        try:
+            contact = Contact.objects.filter(is_active=True).first()
+            response = ContactSerializer(contact)
+
+            return CustomResponse(data=response.data, message="Success", status=status.HTTP_200_OK, request=request)
+        except:
+            return CustomResponse(success=False, message="Contact not found", status=status.HTTP_404_NOT_FOUND, request=request)

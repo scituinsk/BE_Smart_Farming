@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
+from smartfarming.models import Contact
 
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -85,3 +86,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
             # last_name=validated_data['last_name']
         )
         return user
+    
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ['email', 'website','github', 'instagram', 'whatsapp', 'linkedin']
