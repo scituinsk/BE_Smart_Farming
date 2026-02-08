@@ -40,7 +40,9 @@ urlpatterns = [
     path('api/register', RegistrationView.as_view(), name='register'),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/reset-password', ResetPasswordView.as_view(), name='reset_password'),
+
     path('api/scit/contacts', ContactView.as_view(), name='contacts'),
+    path('api/terms', TermsView.as_view(), name='terms'),
     path('api/delete-account', DeleteAccountView.as_view(), name='delete account'),
 
     path('api/iot/', include('iot.urls')),

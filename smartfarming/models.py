@@ -11,3 +11,13 @@ class Contact(models.Model):
 
     def __str__(self):
         return f"Contact is_active = {self.is_active}"
+
+class Terms(models.Model):
+    title = models.CharField(max_length=255, verbose_name="Title")
+    content = models.TextField(verbose_name="Content")
+    is_active = models.BooleanField(default=False, verbose_name="Aktifkan untuk menampilkanya saat get *[0]")
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} is_active = {self.is_active}"

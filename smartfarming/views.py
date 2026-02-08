@@ -166,3 +166,14 @@ class DeleteAccountView(APIView):
 
         except Exception as e:
             return CustomResponse( success=False, message="Terjadi kesalahan saat menghapus akun.", status=status.HTTP_500_INTERNAL_SERVER_ERROR, request=request)
+        
+class TermsView(APIView):
+    """ Get terms index pertama yang berstatus aktif"""
+    def get(self, request):
+        try:
+            terms = Terms.objects.filter(is_active=True).first()
+            response = TermsSerializer(terms)
+
+            return CustomResponse(data=response.data, message="Success", status=status.HTTP_200_OK, request=request)
+        except:
+            return CustomResponse(success=False, message="Terms not found", status=status.HTTP_404_NOT_FOUND, request=request)
