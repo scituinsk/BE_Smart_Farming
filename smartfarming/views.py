@@ -140,3 +140,29 @@ class ContactView(APIView):
             return CustomResponse(data=response.data, message="Success", status=status.HTTP_200_OK, request=request)
         except:
             return CustomResponse(success=False, message="Contact not found", status=status.HTTP_404_NOT_FOUND, request=request)
+        
+class DeleteAccountView(APIView):
+    """
+    Soft delete account: Menonaktifkan user agar tidak bisa login,
+    dan membersihkan device token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        password = request.data.get('password')
+        if not password:
+            return CustomResponse( success=False,  message='Password wajib diisi untuk konfirmasi penghapusan.',  status=status.HTTP_400_BAD_REQUEST,  request=request)
+
+        if not user.check_password(password):
+            return CustomResponse( success=False, message='Password salah.',  status=status.HTTP_401_UNAUTHORIZED,  request=request)
+
+        try:
+            FCMDevice.objects.filter(user=user).delete()
+            user.is_active = False 
+            user.save()
+
+            return CustomResponse( success=True, message="Akun berhasil dihapus.",  status=status.HTTP_200_OK,  request=request)
+
+        except Exception as e:
+            return CustomResponse( success=False, message="Terjadi kesalahan saat menghapus akun.", status=status.HTTP_500_INTERNAL_SERVER_ERROR, request=request)
