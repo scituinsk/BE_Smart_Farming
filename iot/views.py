@@ -30,7 +30,7 @@ class DeviceListAdminView(APIView):
         Hanya dapat diakses oleh admin (is_staff).
         Membuat modul baru berdasarkan data request body.
     """
-    permission_classes = [AdminOnlyPost, IsAuthenticated]
+    permission_classes = [AdminOnlyPost, AdminOnlyGet, IsAuthenticated]
 
     def get(self, request):
         queryset = Modul.objects.all().order_by('name')
@@ -49,11 +49,11 @@ class DeviceDetailAdminView(APIView):
     """
     Endpoint untuk menghapus modul berdasarkan primary key (pk).
     """
-    permission_classes = [IsAuthenticated, AdminOnlyDelete]
+    permission_classes = [IsAuthenticated, AdminOnlyDelete, AdminOnlyPatch]
 
     def patch(self, request, pk):
         modul = get_object_or_404(Modul, pk=pk)
-        serializer = ModulSerializers(modul, data= request.data, partial=True)
+        serializer = ModulSerializers(modul, data= request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return CustomResponse(success=True, message="Device diperbarui", data=serializer.data, status=status.HTTP_200_OK, request=request)
