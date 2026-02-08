@@ -10,6 +10,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q
 from fcm_django.models import FCMDevice
 from smartfarming.utils.exc_handler import CustomResponse
+from django.http import FileResponse, Http404
+from django.views import View
+from .models import FirmwareUpdate
+from smartfarming.utils.permissions import IsModulAuthenticated
 from .serializers import *
 import logging
 
@@ -177,3 +181,31 @@ class TermsView(APIView):
             return CustomResponse(data=response.data, message="Success", status=status.HTTP_200_OK, request=request)
         except:
             return CustomResponse(success=False, message="Terms not found", status=status.HTTP_404_NOT_FOUND, request=request)
+        
+class LatestFirmwareView(APIView):
+    """
+    Docstring for LatestFirmwareView
+        - Ambil firmware terbaru yang statusnya aktif
+        - Buka file binary tersebut
+        - Return sebagai FileResponse
+    """
+    permission_classes = [IsModulAuthenticated]
+
+    def get(self, request):
+        logger.info(f"Device update request: {request.modul.serial_id}")
+
+        latest_firmware = FirmwareUpdate.objects.filter(is_active=True).first()
+
+        if not latest_firmware or not latest_firmware.file:
+             return Response({"error": "No update available"}, status=404)
+
+        try:
+            file_handle = latest_firmware.file.open('rb')
+            response = FileResponse(file_handle, as_attachment=True, filename=f"update_{latest_firmware.version}.bin")
+            
+            # Kirim info versi di header agar device bisa cek sebelum download full
+            response['X-Firmware-Version'] = latest_firmware.version
+            return response
+            
+        except FileNotFoundError:
+             return CustomResponse(message="File not found", status=status.HTTP_404_NOT_FOUND, request=request)

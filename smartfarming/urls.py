@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/scit/contacts', ContactView.as_view(), name='contacts'),
     path('api/terms', TermsView.as_view(), name='terms'),
     path('api/delete-account', DeleteAccountView.as_view(), name='delete account'),
+    path('api/update/latest', LatestFirmwareView.as_view(), name='latest-firmware'),
 
     path('api/iot/', include('iot.urls')),
     path('api/user/', include('profil.urls')),

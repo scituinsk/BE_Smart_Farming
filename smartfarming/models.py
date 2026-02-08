@@ -21,3 +21,16 @@ class Terms(models.Model):
 
     def __str__(self):
         return f"{self.title} is_active = {self.is_active}"
+    
+class FirmwareUpdate(models.Model):
+    version = models.CharField(max_length=50, unique=True, help_text="Contoh: v1.0.1")
+    file = models.FileField(upload_to='firmware_updates/')
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, help_text="Hanya firmware aktif yang akan di-download device")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Firmware {self.version}"
